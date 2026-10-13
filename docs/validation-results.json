@@ -44,7 +44,18 @@
   ],
   "signed_program_files": 155,
   "public_redistribution_approved": false,
-  "github_ci_executed": false,
+  "github_ci_executed": true,
+  "github_ci": {
+    "commit": "6e4231bb1a08b310702a47567457fb9d509abf63",
+    "run_id": 38450953722,
+    "url": "https://github.com/kappapr1der/qip2005-jimm/actions/runs/38450953722",
+    "conclusion": "success",
+    "tests": 42,
+    "passed": 41,
+    "skipped": 1,
+    "real_data_test_executed": false,
+    "installer_built": false
+  },
   "github_release_created": false,
-  "remote_updated": false
+  "remote_updated": true
 }
