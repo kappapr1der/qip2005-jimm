@@ -1,0 +1,29 @@
+name: Local private installer build
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  private-installer:
+    if: github.ref == 'refs/heads/main'
+    # A maintainer-controlled Windows runner holds the legally obtained private package.
+    runs-on: [self-hosted, Windows, X64, qip-private]
+    environment: qip-private-build
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262
+        with:
+          persist-credentials: false
+      - run: python scripts/check_repository.py
+      - run: ./scripts/build-agent.ps1 -ToolchainBin $env:QIP_TOOLCHAIN
+        env:
+          QIP_TOOLCHAIN: ${{ vars.QIP_TOOLCHAIN }}
+      - run: ./scripts/test.ps1 -ToolchainBin $env:QIP_TOOLCHAIN
+        env:
+          QIP_TOOLCHAIN: ${{ vars.QIP_TOOLCHAIN }}
+      - name: Build locally without GitHub artifact upload
+        env:
+          MANIFEST_SIGNING_KEY_B64: ${{ secrets.MANIFEST_SIGNING_KEY_B64 }}
+          QIP_ISCC: ${{ vars.QIP_ISCC }}
+          QIP_PRIVATE_PAYLOAD: ${{ vars.QIP_PRIVATE_PAYLOAD }}
+        run: ./scripts/build-installer.ps1 -ISCC $env:QIP_ISCC -PayloadDirectory $env:QIP_PRIVATE_PAYLOAD
+      # The installer remains on the private runner. No upload-artifact or release step.

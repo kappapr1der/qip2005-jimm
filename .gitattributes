@@ -1,0 +1,4 @@
+* text=auto eol=lf
+# Preserve upstream bytes; build verifies the original vendor header SHA-256.
+updater/vendor/** -text
+docs/licenses/** -text

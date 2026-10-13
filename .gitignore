@@ -1,0 +1,27 @@
+# Third-party client and all personal data stay local.
+/private/
+/build/
+/dist/
+/work/
+**/Users/
+**/History/
+**/backups/
+**/downloads/
+*.dpapi
+*.pfx
+*.p12
+*private*.pem
+*.log
+*.tmp
+__pycache__/
+.pytest_cache/
+*.exe
+*.dll
+*.7z
+*.zip
+*.wav
+*.bmp
+*.gif
+*.ico
+*.lnk
+!updater/vendor/LICENSE.nlohmann-json

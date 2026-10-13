@@ -1,0 +1,50 @@
+{
+  "native_tests": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "real_data_test_executed": true
+  },
+  "installer_checks": 16,
+  "launcher_runs": [
+    {
+      "attempt": 1,
+      "launcher_ms": 50,
+      "client_running": true,
+      "window_present": true,
+      "account_free": true
+    },
+    {
+      "attempt": 2,
+      "launcher_ms": 52,
+      "client_running": true,
+      "window_present": true,
+      "account_free": true
+    }
+  ],
+  "private_user_files_verified": 31,
+  "working_profiles_unchanged": true,
+  "original_qip_sha256": "495b9cae959b1713a3857d6b6519309d94541d895eae98f3caf06a57226e4da8",
+  "original_docking_sha256": "cff686ad048c9d7db12113f2fcb0947ba03c0186cb6daefc1bdca9e2ea395e7f",
+  "installer_sha256": "eeeab1fc0ebae4740a7e82288406a88aab1352bebeae9efd5f02e943e8f07924",
+  "installer_bytes": 3877754,
+  "agent_bytes": 1415680,
+  "agent_imports": [
+    "ADVAPI32.dll",
+    "bcrypt.dll",
+    "CRYPT32.dll",
+    "GDI32.dll",
+    "KERNEL32.dll",
+    "msvcrt.dll",
+    "ole32.dll",
+    "SHELL32.dll",
+    "USER32.dll",
+    "WINHTTP.dll"
+  ],
+  "signed_program_files": 155,
+  "public_redistribution_approved": false,
+  "github_ci_executed": false,
+  "github_release_created": false,
+  "remote_updated": false
+}
