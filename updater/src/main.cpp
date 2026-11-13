@@ -6,7 +6,16 @@
 
 using namespace qip;
 static Policy policy(){return {Repository,PublicModulus,QipHash,DockingHash};}
-static void notice(const wchar_t* text){MessageBoxW(nullptr,text,L"QIP Update Agent",MB_OK|MB_ICONINFORMATION);}
+#ifdef QIP_AGENT_TESTING
+static int testNotices=0;
+#endif
+static void notice(const wchar_t* text){
+#ifdef QIP_AGENT_TESTING
+    (void)text;++testNotices;
+#else
+    MessageBoxW(nullptr,text,L"QIP Update Agent",MB_OK|MB_ICONINFORMATION);
+#endif
+}
 static bool consent(const std::string& version){auto text=L"Доступно обновление QIP "+wide(version)+L".\n\nУстановщик скачан, его подпись и SHA-256 проверены.\nУстановить обновление после закрытия QIP?\nАктивная переписка прервана не будет.";return MessageBoxW(nullptr,text.c_str(),L"Обновление QIP",MB_YESNO|MB_DEFBUTTON2|MB_ICONQUESTION)==IDYES;}
 static fs::path validatedApp(const fs::path& app){noLinks(app);require(_wcsicmp(app.filename().c_str(),L"QIP2005")==0,"application_directory");return fs::absolute(app).lexically_normal();}
 static void stageWorker(const fs::path& app,const Offer& offer,const fs::path& installer,bool automatic){
@@ -16,11 +25,13 @@ static void stageWorker(const fs::path& app,const Offer& offer,const fs::path& i
     writeAtomic(jobDir/L"job.json",json{{"app",utf8(app.wstring())},{"installer",utf8(installer.wstring())},{"automatic",automatic},{"id",id}}.dump());
     writeAtomic(jobDir/L"phase","prepared");process(jobDir/L"QipUpdateWorker.exe",L"--worker "+quote(wide(id)),false,jobDir);
 }
-static bool checkCycle(const fs::path& app,bool manual){
+static bool checkCycle(const fs::path& app,bool manual,Transport* transport=nullptr){
+    Mutex checking(lockName("Check",app),true,manual?30000:0);
+    if(!checking.acquired()){if(manual)notice(L"Проверка обновлений уже выполняется. Попробуйте ещё раз после её завершения.");return false;}
     auto config=settings();auto state=readJson(dataRoot()/L"state.json");auto timestamp=now();
     if(!manual && !due(timestamp,state.value("last_check",0ULL),config.value("check_automatically",true)))return false;
     state["last_check"]=timestamp;writeAtomic(dataRoot()/L"state.json",state.dump());
-    Http http;auto offer=checkUpdate(http,policy(),installedVersion(app),state.value("highest_authenticated_version",std::string()),timestamp);
+    Http http;Transport& connection=transport?*transport:http;auto offer=checkUpdate(connection,policy(),installedVersion(app),state.value("highest_authenticated_version",std::string()),timestamp);
     if(!offer){log("no_update");if(manual)notice(L"Новых стабильных обновлений нет.");return false;}
     state["highest_authenticated_version"]=offer->manifest.at("version").get<std::string>();writeAtomic(dataRoot()/L"state.json",state.dump());
     std::string version=offer->manifest.at("version").get<std::string>();
@@ -28,14 +39,14 @@ static bool checkCycle(const fs::path& app,bool manual){
     auto cache=dataRoot()/L"downloads"/wide(version);noLinks(cache);fs::create_directories(cache);
     auto setup=cache/wide(offer->manifest.at("asset").get<std::string>());
     bool automatic=config.value("install_after_exit",false);
-    if(!downloadAndApprove(http,*offer,setup,automatic,[&]{return consent(version);})){state["declined_version"]=version;writeAtomic(dataRoot()/L"state.json",state.dump());log("user_declined");return false;}
+    if(!downloadAndApprove(connection,*offer,setup,automatic,[&]{return consent(version);})){state["declined_version"]=version;writeAtomic(dataRoot()/L"state.json",state.dump());log("user_declined");return false;}
     log("update_authenticated");
     stageWorker(app,*offer,setup,automatic);log("update_scheduled");return true;
 }
-static void monitor(const fs::path& app,bool manual){
-    Mutex single(lockName("Monitor",app),true);if(!single.acquired())return;
+static void monitor(const fs::path& app,bool manual,Transport* transport=nullptr){
+    Mutex single(lockName(manual?"ManualCheck":"Monitor",app),true);if(!single.acquired())return;
     do {
-        try {if(checkCycle(app,manual))return;}
+        try {if(checkCycle(app,manual,transport))return;}
         catch(const std::exception& error){log("check_failed");logFailure(error);if(manual)notice(L"Проверка обновления не выполнена. Файлы QIP не изменены.\nПроверьте подключение к сети и журнал обновлятора.");}
         if(manual)return;
         if(!clientRunning(app))break;

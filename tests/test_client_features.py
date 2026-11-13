@@ -283,6 +283,26 @@ class ClientFeatureTests(unittest.TestCase):
         self.assertTrue(json.loads(stdout)["finished"])
         self.assertEqual(len(list((state / "profile-backups").glob("profile-*/profile.json"))), 1)
 
+    def test_manual_update_check_works_while_session_monitor_runs(self):
+        self.native("launch", show=False)
+        state = self.dir / "agent-state"
+        state.mkdir(exist_ok=True)
+        (state / "settings.json").write_text(json.dumps({"check_automatically": False, "backup_after_exit": False}))
+        fixture = self.fixture_file()
+        monitor = subprocess.Popen([str(HARNESS), "session-monitor", str(fixture)], stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        try:
+            time.sleep(0.2)
+            self.assertIsNone(monitor.poll())
+            response = self.native("manual-check", responses={
+                "https://api.github.com/repos/kappapr1der/qip2005-jimm/releases/latest": {"status": 404, "body": ""}
+            })
+            self.assertEqual(response["requests"], 1)
+            self.assertEqual(response["notices"], 1)
+            self.assertIsNone(monitor.poll())
+        finally:
+            (self.app / "stop-fixture").touch()
+            monitor.communicate(timeout=10)
+
 
 if __name__ == "__main__":
     suite = unittest.defaultTestLoader.loadTestsFromTestCase(ClientFeatureTests)

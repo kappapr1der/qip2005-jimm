@@ -58,6 +58,7 @@ int wmain(int argc,wchar_t** argv){
         }
         else if(mode=="prepare-profile"){auto app=fs::path(wide(f.at("app").get<std::string>()));prepareProfile(app,false);output["prepared"]=true;}
         else if(mode=="session-monitor"){monitor(wide(f.at("app").get<std::string>()),false);output["finished"]=true;}
+        else if(mode=="manual-check"){MockHttp http(f);monitor(wide(f.at("app").get<std::string>()),true,&http);output={{"requests",http.requests},{"notices",testNotices}};}
         else if(mode=="profile-backup" || mode=="profile-restore" || mode=="profile-recover" || mode=="profile-list"){
             auto app=fs::path(wide(f.at("app").get<std::string>()));ProfileBackupStore store(wide(f.at("storage").get<std::string>()));auto extra=wide(f.value("external",std::string()));
             if(mode=="profile-backup"){auto result=store.create(app,f.value("manual",false),f.value("enabled",true),f.value("timestamp",now()),extra);output={{"status",result.status},{"id",result.id}};}

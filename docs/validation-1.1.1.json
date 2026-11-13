@@ -9,7 +9,7 @@
     "real_data_test_executed": true
   },
   "client_feature_tests": {
-    "tests": 25,
+    "tests": 26,
     "failures": 0,
     "errors": 0,
     "skipped": 0,
@@ -62,8 +62,8 @@
     "original_plugin_unchanged": true,
     "private_full_backup_created": true
   },
-  "installer_sha256": "66190b1f79841d295eb9e423b6e3a3b5a93856fdf378603de5ffb36b235f9d11",
-  "installer_bytes": 3900738,
+  "installer_sha256": "cdffb402d296ac21f37ebd4f3befb83eefc0f4bca08ad85af228df1aa0289b25",
+  "installer_bytes": 3900701,
   "public_redistribution_approved": true,
   "real_messages_sent_by_agent": false,
   "windows_reboot_test_executed": false,
