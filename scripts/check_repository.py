@@ -8,6 +8,8 @@ def check(git: str):
     tracked=subprocess.check_output([git,'-C',str(ROOT),'ls-files','-z'])
     new=subprocess.check_output([git,'-C',str(ROOT),'ls-files','--others','--exclude-standard','-z'])
     files=set(filter(None,(tracked+new).decode('utf-8').split('\0')))
+    deleted=subprocess.check_output([git,'-C',str(ROOT),'ls-files','--deleted','-z'])
+    files.difference_update(filter(None,deleted.decode('utf-8').split('\0')))
     forbidden={'.exe','.dll','.7z','.zip','.wav','.bmp','.gif','.ico','.pfx','.dpapi','.lnk','.log'}
     for name in files:
         path=Path(name)
@@ -30,9 +32,8 @@ def check(git: str):
     assert script.count('onlyifdoesntexist uninsneveruninstall')==5
     state=json.loads((ROOT/'docs/redistribution.json').read_text())
     if state['qip_redistribution_approved']:
-        evidence=state.get('evidence')
-        if not evidence or '..' in Path(evidence).parts or not (ROOT/evidence).is_file():
-            raise RuntimeError('Written redistribution evidence is required')
+        from redistribution_policy import require_permission
+        require_permission(ROOT)
     import yaml
     for path in (ROOT/'.github/workflows').glob('*.yml'):
         workflow=yaml.load(path.read_text(encoding='utf-8'),Loader=yaml.BaseLoader)

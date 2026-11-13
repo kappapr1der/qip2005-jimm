@@ -52,10 +52,7 @@ def load_key(path: Path | None):
     if path:
         pem = dpapi(path.read_bytes(), False)
     else:
-        secret = os.environ.get('MANIFEST_SIGNING_KEY_B64')
-        if not secret:
-            raise RuntimeError('Signing key not configured')
-        pem = base64.b64decode(secret, validate=True)
+        raise RuntimeError('Explicit local DPAPI key path required; private keys are not stored in GitHub secrets')
     key = serialization.load_pem_private_key(pem, password=None)
     if not isinstance(key, rsa.RSAPrivateKey) or key.key_size != 3072:
         raise RuntimeError('Expected RSA-3072 signing key')

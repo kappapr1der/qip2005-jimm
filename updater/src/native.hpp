@@ -134,7 +134,7 @@ class Http final:public Transport {
         } throw std::runtime_error("redirect_limit");
     }
 public:
-    Http():session(WinHttpOpen(L"QIPUpdateAgent/1.1.1",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0)) { require(session.h,"http_init");require(WinHttpSetTimeouts(session.h,10000,10000,15000,15000),"http_timeout"); }
+    Http():session(WinHttpOpen(L"QIPUpdateAgent/1.1.2",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0)) { require(session.h,"http_init");require(WinHttpSetTimeouts(session.h,10000,10000,15000,15000),"http_timeout"); }
     Response get(const std::string& url,size_t limit) override{return fetch(url,limit,nullptr);}
     void download(const std::string& url,const fs::path& file,uint64_t limit) override{require(fetch(url,(size_t)limit,&file).status==200,"download_status");}
 };

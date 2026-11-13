@@ -96,6 +96,10 @@ class NativeUpdaterTests(unittest.TestCase):
         self.fixture['fail']=True;r=self.run_native('apply');self.assertEqual(r['result'],'rolled_back');self.assertTrue(r['user_data_preserved']);self.assertTrue(r['qip_unchanged']);self.assertEqual(r['integration_state'],1);self.assertEqual(r['current_after'],'1.0.0')
     def test_wrong_installed_file_triggers_rollback(self):
         self.fixture['post_verify_failure']=True;r=self.run_native('apply');self.assertEqual(r['result'],'rolled_back');self.assertTrue(r['user_data_preserved'])
+    def test_profile_finalization_failure_rolls_back_before_success(self):
+        self.fixture['finalize_failure']=True;r=self.run_native('apply')
+        self.assertEqual(r['result'],'rolled_back');self.assertTrue(r['user_data_preserved'])
+        self.assertEqual(r['current_after'],'1.0.0');self.assertEqual(r['integration_state'],1)
     def test_recursive_backup_is_rejected_before_install(self):
         self.fixture['backup']=str(self.app/'nested-backup');self.assertEqual(self.run_native('apply')['error'],'backup_recursive')
     def test_crash_recovery_from_complete_backup(self):

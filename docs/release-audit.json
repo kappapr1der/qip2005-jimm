@@ -1,0 +1,7 @@
+{
+  "version": "1.1.2",
+  "new_public_release_approved": true,
+  "decision_record": "docs/permissions/publication-1.1.2.json",
+  "decision_sha256": "285b17fe0a974e347c6dfc3a1a1d5f406bee3cfce31b537740baa40727554a2c",
+  "reason": "Final audit completed. The project owner explicitly requested a release rather than a source-only merge. This authorizes the publication action for 1.1.2 and does not verify QIP rightsholder permission."
+}

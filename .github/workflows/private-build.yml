@@ -22,8 +22,8 @@ jobs:
           QIP_TOOLCHAIN: ${{ vars.QIP_TOOLCHAIN }}
       - name: Build locally without GitHub artifact upload
         env:
-          MANIFEST_SIGNING_KEY_B64: ${{ secrets.MANIFEST_SIGNING_KEY_B64 }}
+          QIP_SIGNING_KEY_DPAPI: ${{ vars.QIP_SIGNING_KEY_DPAPI }}
           QIP_ISCC: ${{ vars.QIP_ISCC }}
           QIP_PRIVATE_PAYLOAD: ${{ vars.QIP_PRIVATE_PAYLOAD }}
-        run: ./scripts/build-installer.ps1 -ISCC $env:QIP_ISCC -PayloadDirectory $env:QIP_PRIVATE_PAYLOAD
+        run: ./scripts/build-installer.ps1 -ISCC $env:QIP_ISCC -PayloadDirectory $env:QIP_PRIVATE_PAYLOAD -SigningKeyDpapi $env:QIP_SIGNING_KEY_DPAPI
       # The installer remains on the private runner. No upload-artifact or release step.

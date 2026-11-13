@@ -5,7 +5,7 @@ on:
       tag:
         description: 'Stable version tag (must equal VERSION)'
         required: true
-        default: v1.1.1
+        default: v1.1.2
       approval:
         description: 'Type PUBLISH_STABLE after reviewing this commit'
         required: true
@@ -30,14 +30,22 @@ jobs:
         run: |
           $version = (Get-Content VERSION -Raw).Trim()
           if ($env:RELEASE_TAG -ne "v$version") { throw 'Tag does not match VERSION.' }
-          $rights = Get-Content docs/redistribution.json -Raw | ConvertFrom-Json
-          if (-not $rights.qip_redistribution_approved -or -not $rights.evidence) { throw 'Public QIP redistribution is blocked: permission evidence missing.' }
+          python scripts/redistribution_policy.py --publication
+          if ($LASTEXITCODE -ne 0) { throw 'Public release is blocked by the permission or audit gate.' }
       - run: ./scripts/acquire-toolchain.ps1
       - run: ./scripts/build-agent.ps1 -ToolchainBin "$PWD/build/toolchain/w64devkit/bin"
       - run: ./scripts/test.ps1 -ToolchainBin "$PWD/build/toolchain/w64devkit/bin"
+      - name: Require signed end-to-end update and publication tests
+        run: |
+          ./scripts/prepare-inno.ps1
+          python tests/test_e2e_update.py --toolchain "$PWD/build/toolchain/w64devkit/bin" --iscc "$PWD/build/inno/compiler/ISCC.exe" --work "$PWD/build/e2e-update" --report "$PWD/build/e2e-results.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Signed E2E failed.' }
+          python -m unittest discover -s tests -p test_release_policy.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Publication policy tests failed.' }
   publish:
     needs: tests
-    runs-on: windows-2025
+    # Signing key stays DPAPI-protected on the maintainer machine; never in GitHub secrets.
+    runs-on: [self-hosted, Windows, X64, qip-release-signing]
     environment: qip-release
     permissions:
       contents: write
@@ -79,8 +87,10 @@ jobs:
           if ($inno.ExitCode -ne 0) { throw 'Compiler preparation failed.' }
       - name: Build and sign release
         env:
-          MANIFEST_SIGNING_KEY_B64: ${{ secrets.MANIFEST_SIGNING_KEY_B64 }}
-        run: ./scripts/build-installer.ps1 -ISCC "$PWD/private/inno/ISCC.exe"
+          QIP_SIGNING_KEY_DPAPI: ${{ vars.QIP_SIGNING_KEY_DPAPI }}
+        run: |
+          if (-not $env:QIP_SIGNING_KEY_DPAPI) { throw 'Local DPAPI key path is required on the dedicated signing runner.' }
+          ./scripts/build-installer.ps1 -ISCC "$PWD/private/inno/ISCC.exe" -SigningKeyDpapi $env:QIP_SIGNING_KEY_DPAPI
       - name: Publish after tests, signature checks and human approval
         env:
           GH_TOKEN: ${{ github.token }}

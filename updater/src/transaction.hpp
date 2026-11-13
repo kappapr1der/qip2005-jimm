@@ -67,7 +67,7 @@ inline void verifyInstalled(const fs::path& app,const json& manifest) {
     for(auto& f:manifest.at("files")) { std::string relative=f.at("path").get<std::string>();require(safeRelative(relative) && !mutablePath(relative),"installed_path");auto file=app/wide(relative);noLinks(file);require(hashFile(file)==f.at("sha256").get<std::string>(),"installed_hash"); }
 }
 enum class ApplyResult { busy, installed, rolledBack };
-inline ApplyResult apply(Installer& installer,Integration& integration,const fs::path& app,const fs::path& setup,const fs::path& backup,const fs::path& phaseFile,const fs::path& external,const Offer& offer) {
+inline ApplyResult apply(Installer& installer,Integration& integration,const fs::path& app,const fs::path& setup,const fs::path& backup,const fs::path& phaseFile,const fs::path& external,const Offer& offer,const std::function<void()>& finalize={}) {
     if(installer.busy(app))return ApplyResult::busy;
     verifyInstaller(offer,setup);
     require(newer(offer.manifest.at("version").get<std::string>(),installedVersion(app)),"downgrade_blocked");
@@ -77,7 +77,7 @@ inline ApplyResult apply(Installer& installer,Integration& integration,const fs:
     try {
         Handle locked(CreateFileW(setup.c_str(),GENERIC_READ,FILE_SHARE_READ,nullptr,OPEN_EXISTING,FILE_ATTRIBUTE_NORMAL,nullptr));require(locked.h!=INVALID_HANDLE_VALUE,"installer_lock");
         verifyInstaller(offer,setup);
-        DWORD exit=installer.run(setup,app);require(exit==0,"installer_failed");verifyInstalled(app,offer.manifest);writeAtomic(phaseFile,"installed");return ApplyResult::installed;
+        DWORD exit=installer.run(setup,app);require(exit==0,"installer_failed");if(finalize)finalize();verifyInstalled(app,offer.manifest);writeAtomic(phaseFile,"installed");return ApplyResult::installed;
     } catch(...) {
         writeAtomic(phaseFile,"restoring");snapshot.restore(app,integration,offer.manifest.at("files"));writeAtomic(phaseFile,"rolled-back");return ApplyResult::rolledBack;
     }

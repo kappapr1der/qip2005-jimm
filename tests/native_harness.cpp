@@ -88,7 +88,12 @@ int wmain(int argc,wchar_t** argv){
                     else{
                         auto app=fs::path(wide(f.at("app").get<std::string>()));auto before=fileHashes(app/L"Users");MockIntegration integration;MockInstaller installer(f,integration);
                         auto backup=fs::path(wide(f.at("backup").get<std::string>()));auto phase=fs::path(wide(f.at("phase").get<std::string>()));
-                        auto result=apply(installer,integration,app,setup,backup,phase,{},*offer);
+                        auto result=apply(installer,integration,app,setup,backup,phase,{},*offer,[&]{
+                            if(f.value("finalize_failure",false)){
+                                for(auto& file:fs::recursive_directory_iterator(app/L"Users"))if(file.is_regular_file()){writeAtomic(file.path(),"fixture finalization damage");break;}
+                                throw std::runtime_error("profile_prepare_failed");
+                            }
+                        });
                         output["result"]=result==ApplyResult::installed?"installed":result==ApplyResult::busy?"busy":"rolled_back";
                         output["installer_calls"]=installer.calls;output["user_data_preserved"]=fileHashes(app/L"Users")==before;
                         output["integration_state"]=integration.state;output["backup_exists"]=fs::exists(backup/L"snapshot.json");

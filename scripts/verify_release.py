@@ -5,12 +5,12 @@ from cryptography.hazmat.primitives import serialization, hashes
 from cryptography.hazmat.primitives.asymmetric import padding
 ROOT=Path(__file__).resolve().parents[1]
 
-def verify(directory: Path):
+def verify(directory: Path, expected_version: str | None = None):
     data=(directory/'update-manifest.json').read_bytes()
     signature=base64.b64decode((directory/'update-manifest.sig').read_text().strip(),validate=True)
     public=serialization.load_pem_public_key((ROOT/'updater/keys/release-public.pem').read_bytes())
     public.verify(signature,data,padding.PKCS1v15(),hashes.SHA256())
-    manifest=json.loads(data);version=(ROOT/'VERSION').read_text().strip()
+    manifest=json.loads(data);version=expected_version or (ROOT/'VERSION').read_text().strip()
     repo=json.loads((ROOT/'repository.json').read_text())
     assert manifest['repository']==repo['owner']+'/'+repo['name'] and manifest['schema']==1
     assert manifest['version']==version and manifest['tag']=='v'+version
@@ -31,4 +31,4 @@ def verify(directory: Path):
     print('RSA signature, installer SHA-256, version, file list and checksum document verified.')
 
 if __name__=='__main__':
-    p=argparse.ArgumentParser();p.add_argument('directory',type=Path);verify(p.parse_args().directory)
+    p=argparse.ArgumentParser();p.add_argument('directory',type=Path);p.add_argument('--expected-version');a=p.parse_args();verify(a.directory,a.expected_version)

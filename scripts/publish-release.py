@@ -13,6 +13,7 @@ import urllib.request
 import zipfile
 
 from verify_release import verify
+from redistribution_policy import require_publication
 
 ROOT = Path(__file__).resolve().parents[1]
 REPOSITORY = json.loads((ROOT / "repository.json").read_text())
@@ -101,13 +102,11 @@ class GitHub:
         return value.hexdigest()
 
 
-def prepare(directory):
+def prepare(directory, owner_decision=None):
     version = (ROOT / "VERSION").read_text().strip()
     if not re.fullmatch(r"\d+\.\d+\.\d+", version):
         raise RuntimeError("Stable version required")
-    rights = json.loads((ROOT / "docs/redistribution.json").read_text())
-    if not rights["qip_redistribution_approved"] or not (ROOT / rights["evidence"]).is_file():
-        raise RuntimeError("Owner redistribution confirmation is missing")
+    require_publication(ROOT, owner_decision)
     verify(directory)
     source = directory / "QIP2005_clean.7z"
     if sha(source) != SOURCE_HASH:
@@ -128,8 +127,8 @@ def prepare(directory):
     ]
 
 
-def publish(api, directory):
-    version, files = prepare(directory)
+def publish(api, directory, owner_decision=None):
+    version, files = prepare(directory, owner_decision)
     head = git("rev-parse", "HEAD")
     main = api.request(f"/repos/{REPO}/commits/main")
     if main["sha"] != head:
@@ -182,6 +181,8 @@ if __name__ == "__main__":
     parser.add_argument("--check-auth", action="store_true")
     parser.add_argument("--publish", action="store_true")
     parser.add_argument("--dispatch-ci", action="store_true")
+    parser.add_argument("--owner-publication-decision", type=Path,
+                        help="Explicit version-scoped owner instruction; does not assert rightsholder permission")
     args = parser.parse_args()
     try:
         api = GitHub()
@@ -189,9 +190,15 @@ if __name__ == "__main__":
             repository = api.request(f"/repos/{REPO}")
             if not repository.get("permissions", {}).get("push"):
                 raise RuntimeError("GitHub repository write permission is missing")
-            print(json.dumps({"repository": REPO, "authenticated": True, "can_publish": True}))
+            try:
+                require_publication(ROOT, args.owner_publication_decision)
+                allowed = True
+            except RuntimeError:
+                allowed = False
+            print(json.dumps({"repository": REPO, "authenticated": True, "source_push_permission": True,
+                              "public_release_policy_allows_publication": allowed}))
         elif args.publish:
-            publish(api, args.directory.resolve())
+            publish(api, args.directory.resolve(), args.owner_publication_decision)
         elif args.dispatch_ci:
             api.request(f"/repos/{REPO}/actions/workflows/ci.yml/dispatches", "POST", {"ref": "main"})
             print("Full CI dispatch requested.")

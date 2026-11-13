@@ -1,5 +1,7 @@
 {
-  "qip_redistribution_approved": true,
-  "evidence": "docs/permissions/owner-confirmation-2026-11-13.md",
-  "reason": "The project owner confirmed redistribution rights in the working conversation on 2026-11-13 and explicitly requested publication of the release. This records the owner's confirmation; it does not relicense QIP under the MIT license for the maintenance code."
+  "qip_redistribution_approved": false,
+  "verification_status": "owner_assertion_only",
+  "owner_statement": "docs/permissions/owner-confirmation-2026-11-13.md",
+  "evidence": null,
+  "reason": "Independent rightsholder permission has not been supplied. The owner explicitly requested publication of 1.1.2 after the audit. That version-scoped publication instruction is recorded separately and does not change this rights-verification status. Automatic publication remains blocked; local publication requires the exact explicit instruction path and digest."
 }

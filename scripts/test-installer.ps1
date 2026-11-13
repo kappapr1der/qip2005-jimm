@@ -5,6 +5,7 @@ param(
     [string]$RealBaseline = '',
     [string]$BaselineVersion = '1.0.0',
     [string]$BaselineAgentDirectory = '',
+    [string]$TargetAgentDirectory = '',
     [string]$Python = 'python',
     [switch]$TestExistingStartup
 )
@@ -47,6 +48,7 @@ function Same-Hashes($first,$second) {
     return $true
 }
 function Build-Test([string]$version,[string]$text) {
+    $text = $text.Replace('#include "profile-finalization.iss"',('#include "'+$taskProject+'\installer\profile-finalization.iss"'))
     $taskText = $text.Replace($taskProductionId,$taskTestId).Replace('DefaultGroupName=QIP 2005 (Jimm.online)','DefaultGroupName=QIP Installer isolated verification')
     $taskText = $taskText.Replace('QIP 2005 (Jimm.online)', 'QIP Test (isolated)')
     $taskText = $taskText.Replace('OutputDir=..',('OutputDir='+$taskWork)).Replace('OutputDir={#OutputPath}',('OutputDir='+$taskWork))
@@ -59,6 +61,7 @@ function Build-Test([string]$version,[string]$text) {
     $taskScript = Join-Path $taskWork ('test-'+$version+'.iss')
     [IO.File]::WriteAllText($taskScript,$taskText,[Text.UTF8Encoding]::new($true))
     $taskAgent = Join-Path $taskProject 'build\agent'
+    if ($version -eq $taskTargetVersion -and $TargetAgentDirectory) { $taskAgent = $TargetAgentDirectory }
     if ($version -eq $BaselineVersion -and $BaselineAgentDirectory) { $taskAgent = $BaselineAgentDirectory }
     & $ISCC ('/DPayloadDir='+$taskProject+'\private\payload') ('/DAgentDir='+$taskAgent) $taskScript > (Join-Path $taskWork ('compile-'+$version+'.log'))
     if ($LASTEXITCODE -ne 0) { throw 'Test installer compilation failed.' }

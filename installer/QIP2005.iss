@@ -1,6 +1,6 @@
 ﻿; QIP 2005 / Jimm.online. Packaging only: original payload remains byte-for-byte.
 ; Inno Setup 6.7.3 or newer. UTF-8 source.
-#define PackageVersion "1.1.1"
+#define PackageVersion "1.1.2"
 #ifndef PayloadDir
   #define PayloadDir "..\private\payload"
 #endif
@@ -93,6 +93,8 @@ var
   UpdateOptions: TInputOptionWizardPage;
   BackupMade: Boolean;
   SetupTasksExplicit: Boolean;
+
+#include "profile-finalization.iss"
 
 function OwnShortcut(const Name: String): Boolean;
 var
@@ -223,6 +225,7 @@ var
 begin
   if CurStep = ssPostInstall then
   begin
+    try
     if (not WizardSilent) or
       (not FileExists(ExpandConstant('{localappdata}\QIP2005\UpdateAgent\settings.json'))) then
     begin
@@ -235,10 +238,11 @@ begin
         RaiseException('Не удалось сохранить настройки обновления.');
       if ExitCode <> 0 then RaiseException('Обновлятор не сохранил настройки.');
     end;
-    if not Exec(ExpandConstant('{app}\QipUpdateAgent.exe'), '--prepare-profile',
-      ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ExitCode) then
-      RaiseException('Не удалось подготовить профиль QIP.');
-    if ExitCode <> 0 then RaiseException('Профиль QIP не подготовлен. Резервная копия сохранена.');
+    FinalizeInstalledProfile;
+    except
+      ProfileFinalizationFailed := True;
+      RaiseException(GetExceptionMessage);
+    end;
   end;
 end;
 
