@@ -1,6 +1,6 @@
-﻿; QIP 2005 / Jimm.online. Packaging only: original payload remains byte-for-byte.
+; QIP 2005 / Jimm.online. Packaging only: original payload remains byte-for-byte.
 ; Inno Setup 6.7.3 or newer. UTF-8 source.
-#define PackageVersion "1.1.2"
+#define PackageVersion "1.1.3"
 #ifndef PayloadDir
   #define PayloadDir "..\private\payload"
 #endif

@@ -22,6 +22,7 @@ if __name__ == '__main__':
     parser.add_argument('--baseline-version', default='1.1.0')
     parser.add_argument('--target-version', default=(ROOT / 'VERSION').read_text().strip())
     parser.add_argument('--client-exit', default='user closed account-free test QIP normally')
+    parser.add_argument('--transport', choices=['github', 'local'], default='github')
     a = parser.parse_args()
     app = a.audit_directory / 'QIP2005'
     jobs = list((a.state / 'transactions').iterdir())
@@ -45,7 +46,8 @@ if __name__ == '__main__':
     assert {k: v.lower() for k, v in history_before.items()} == history_after
     log = (a.state / 'agent.log').read_text()
     result = {'baseline_version': a.baseline_version, 'release_version': manifest['version'], 'installed_version': manifest['version'],
-              'unmodified_production_agent_and_installer': True, 'anonymous_github_api_and_download': True,
+              'unmodified_production_agent_and_installer': True, 'anonymous_github_api_and_download': a.transport == 'github',
+              'published_release_used': a.transport == 'github',
               'production_rsa_signature_verified': True, 'installer_sha256': manifest['sha256'],
               'installer_size': manifest['size'], 'installed_program_hashes_matched': len(manifest['files']),
               'test_profile_files_preserved_after_client_exit': len(before), 'history_preserved': True,

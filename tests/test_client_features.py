@@ -63,6 +63,18 @@ class ClientFeatureTests(unittest.TestCase):
         result = subprocess.run([str(HARNESS), mode, str(fixture)], capture_output=True, text=True, check=True, timeout=30)
         return json.loads(result.stdout)
 
+    def test_file_identity_recognizes_extended_windows_path_alias(self):
+        path = self.app / 'qip.exe'
+        result = self.native('file-identity', first=str(path), second='\\\\?\\' + str(path))
+        self.assertTrue(result['same_file'])
+        self.assertFalse(result['same_text_path'])
+
+    def test_file_identity_rejects_different_file_with_identical_bytes(self):
+        other = self.app / 'same-bytes.exe'
+        shutil.copy2(self.app / 'qip.exe', other)
+        result = self.native('file-identity', first=str(self.app / 'qip.exe'), second=str(other))
+        self.assertFalse(result['same_file'])
+
     def wait_for(self, predicate):
         deadline = time.monotonic() + 4
         while time.monotonic() < deadline:
