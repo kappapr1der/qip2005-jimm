@@ -1,0 +1,7 @@
+{
+  "url": "https://jimm.online/store/manifest.schema.json",
+  "sha256": "093a6379e3b45f7a15b582af9dfad0e3405b5351c552bb42415eee8f50f19592",
+  "dialect": "https://json-schema.org/draft/2020-12/schema",
+  "documentation": "https://jimm.online/developers#store",
+  "checked_on": "2026-11-13"
+}

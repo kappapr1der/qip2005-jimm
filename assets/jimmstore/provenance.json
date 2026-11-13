@@ -1,0 +1,16 @@
+{
+  "source": "Original QIP 2005 application icon, extracted as PE resource data without executing the client",
+  "source_executable_sha256": "495b9cae959b1713a3857d6b6519309d94541d895eae98f3caf06a57226e4da8",
+  "extracted_ico_sha256": "d007b6b53176153f8c4e68f24a3db2da5b3c8cb443784d8c9c3053ea8ffcaadb",
+  "source_frame": [
+    32,
+    32
+  ],
+  "output_size": [
+    128,
+    128
+  ],
+  "conversion": "RGBA PNG; exact nearest-neighbor 4x scaling; no generated pixels or new artwork",
+  "output_sha256": "64d68c39036cbefcef876cdd0442c1d478339df531c9684182d35b2dd835e87a",
+  "rights": "Original QIP artwork belongs to its respective rightsholders and is excluded from the project MIT license"
+}

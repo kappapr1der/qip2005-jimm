@@ -1,0 +1,24 @@
+{
+  "$schema": "https://jimm.online/store/manifest.schema.json",
+  "schema": 1,
+  "id": "qip2005-jimm",
+  "name": "QIP 2005 Jimm",
+  "summary": "Классический QIP 2005 для Jimm.online на Windows с обновлениями и резервными копиями истории.",
+  "description": "Классический QIP 2005, адаптированный для Jimm.online на современных версиях Windows. Проверен в Windows 11.\n\nДобавлены установка для текущего пользователя, обновления через GitHub Releases, резервное копирование истории и защита от повторного запуска. Оригинальный интерфейс, скины, звуки и функции клиента сохранены.\n\nСопровождение сборки — kappapr1der. Права на оригинальный QIP и его ресурсы принадлежат соответствующим правообладателям.",
+  "icon": "https://raw.githubusercontent.com/kappapr1der/qip2005-jimm/main/assets/jimmstore/qip.png",
+  "category": "client",
+  "developer": {
+    "name": "kappapr1der",
+    "url": "https://github.com/kappapr1der"
+  },
+  "homepage": "https://github.com/kappapr1der/qip2005-jimm",
+  "platforms": [
+    {
+      "os": "windows",
+      "source": {
+        "type": "github",
+        "repo": "kappapr1der/qip2005-jimm"
+      }
+    }
+  ]
+}
