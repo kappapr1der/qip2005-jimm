@@ -1,0 +1,11 @@
+{
+  "version": "1.1.2",
+  "date": "2026-11-13",
+  "project_owner": "kappapr1der",
+  "action": "publish-existing-qip-build",
+  "explicit_publication_requested": true,
+  "statement": "не, релиз делаем, с тем, что изменилось)",
+  "source_package_sha256": "0bcc0f2b0914f89af68200fd811e8c96b9f28fcbdac8ff034bdf02a81fd13a0c",
+  "independent_rightsholder_permission_verified": false,
+  "meaning": "After receiving the final audit, the project owner requested a release rather than a source-only merge. This records the publication instruction for this version only; it is not permission from the QIP rightsholder."
+}

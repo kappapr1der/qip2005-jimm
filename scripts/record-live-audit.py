@@ -19,6 +19,9 @@ if __name__ == '__main__':
     parser.add_argument('--audit-directory', type=Path, required=True)
     parser.add_argument('--state', type=Path, required=True)
     parser.add_argument('--report', type=Path, required=True)
+    parser.add_argument('--baseline-version', default='1.1.0')
+    parser.add_argument('--target-version', default=(ROOT / 'VERSION').read_text().strip())
+    parser.add_argument('--client-exit', default='user closed account-free test QIP normally')
     a = parser.parse_args()
     app = a.audit_directory / 'QIP2005'
     jobs = list((a.state / 'transactions').iterdir())
@@ -32,7 +35,7 @@ if __name__ == '__main__':
     assert hashlib.sha256(setup.read_bytes()).hexdigest() == manifest['sha256']
     assert setup.stat().st_size == manifest['size']
     assert (job / 'phase').read_text() == 'installed'
-    assert json.loads((app / 'installed-version.json').read_text())['version'] == manifest['version'] == '1.1.1'
+    assert json.loads((app / 'installed-version.json').read_text())['version'] == manifest['version'] == a.target_version
     for item in manifest['files']:
         assert hashlib.sha256((app / item['path']).read_bytes()).hexdigest() == item['sha256']
     before = inventory(a.state / 'backups' / job.name / 'application/Users')
@@ -41,14 +44,14 @@ if __name__ == '__main__':
     history_after = inventory(app / 'Users/audit-fixture/History')
     assert {k: v.lower() for k, v in history_before.items()} == history_after
     log = (a.state / 'agent.log').read_text()
-    result = {'baseline_version': '1.1.0', 'release_version': manifest['version'], 'installed_version': manifest['version'],
+    result = {'baseline_version': a.baseline_version, 'release_version': manifest['version'], 'installed_version': manifest['version'],
               'unmodified_production_agent_and_installer': True, 'anonymous_github_api_and_download': True,
               'production_rsa_signature_verified': True, 'installer_sha256': manifest['sha256'],
               'installer_size': manifest['size'], 'installed_program_hashes_matched': len(manifest['files']),
               'test_profile_files_preserved_after_client_exit': len(before), 'history_preserved': True,
-              'real_client_exit': 'user closed account-free test QIP normally',
+              'real_client_exit': a.client_exit,
               'phase': 'installed', 'postinstall_application_busy_observed': ' application_busy\n' in log,
-              'important_limitation': 'Published installer can report success despite failed prepare-profile helper. Fixed only in audit source; no new public release.',
+              'important_limitation': 'Post-install application_busy error observed.' if ' application_busy\n' in log else 'No post-install application_busy error observed in this transaction.',
               'real_account_login_or_messaging_tested': False}
     a.report.parent.mkdir(parents=True, exist_ok=True)
     a.report.write_text(json.dumps(result, indent=2) + '\n')

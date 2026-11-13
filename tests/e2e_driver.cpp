@@ -51,7 +51,7 @@ int wmain(int argc,wchar_t** argv){
             fs::copy_file(modulePath(),dir/L"QipUpdateWorker.exe");writeAtomic(dir/L"manifest.json",raw);writeAtomic(dir/L"manifest.sig",sig);
             writeAtomic(dir/L"job.json",json{{"app",utf8(app.wstring())},{"id",id},{"automatic",true},{"installer","unused-during-recovery"}}.dump());
             WindowsIntegration integration(app);Snapshot(dataRoot()/L"backups"/wide(id)).create(app,{},integration);
-            writeAtomic(dir/L"phase","installing");writeAtomic(app/L"installed-version.json","{\"version\":\"1.1.1\"}");
+            writeAtomic(dir/L"phase","installing");writeAtomic(app/L"installed-version.json",json{{"version",m.at("version")}}.dump());
             writeAtomic(app/L"Users"/L"fixture"/L"History"/L"messages.txt","interrupted-test-installation");
             output={{"journal_created",true}};
         }

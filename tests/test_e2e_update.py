@@ -20,6 +20,8 @@ from cryptography.hazmat.primitives import hashes
 ROOT = Path(__file__).resolve().parents[1]
 PRODUCTION_ID = '{A94D4B7F-5D7B-4E78-BF72-C44A3AC98849}'
 REPO = 'kappapr1der/qip2005-jimm'
+BASELINE = '1.1.1'
+TARGET = (ROOT / 'VERSION').read_text().strip()
 
 
 def sha(path):
@@ -118,10 +120,10 @@ class Audit:
         self.run([tool, '-std=c++20', '-Os', '-DQIP_AGENT_TESTING', '-DQIP_E2E_LEGACY_WORKER', '-D_WIN32_WINNT=0x0A00', '-DUNICODE', '-D_UNICODE',
                   '-static', '-municode', tree / 'tests/e2e_driver.cpp', '-o', self.legacy_driver,
                   '-lwinhttp', '-lbcrypt', '-lcrypt32', '-lshell32', '-lole32', '-ladvapi32', '-luser32', '-lgdi32'])
-        for version in ('1.1.0', '1.1.1'):
+        for version in (BASELINE, TARGET):
             (self.work / f'version-{version}.json').write_text(json.dumps({'version': version, 'repository': REPO}))
-        self.setups = {('1.1.0', False): self.build('1.1.0'), ('1.1.1', False): self.build('1.1.1'),
-                       ('1.1.1', True): self.build('1.1.1', True)}
+        self.setups = {(BASELINE, False): self.build(BASELINE), (TARGET, False): self.build(TARGET),
+                       (TARGET, True): self.build(TARGET, True)}
 
     def build(self, version, fail=False):
         output = self.work / ('failure-artifact' if fail else 'artifacts-' + version)
@@ -179,7 +181,7 @@ end;
         app = case / 'QIP2005'
         self.environment['QIP_E2E_STATE'] = str(case / 'agent-state')
         app.mkdir(parents=True)
-        self.run([self.setups['1.1.0', False], '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/DIR=' + str(app)])
+        self.run([self.setups[BASELINE, False], '/VERYSILENT', '/SUPPRESSMSGBOXES', '/NORESTART', '/DIR=' + str(app)])
         history = app / 'Users/fixture/History'
         history.mkdir(parents=True)
         (history / 'messages.txt').write_bytes('История: синтетические сообщения\r\n'.encode('cp1251') + bytes(range(256)))
@@ -190,13 +192,14 @@ end;
                                                         'backup_after_exit': False, 'external_history_directory': ''}))
         return app, state
 
-    def offer(self, fail=False, invalid_signature=False, corrupt_installer=False, tag='v1.1.1'):
-        setup = self.setups['1.1.1', fail]
+    def offer(self, fail=False, invalid_signature=False, corrupt_installer=False, tag=None):
+        tag = tag or 'v' + TARGET
+        setup = self.setups[TARGET, fail]
         files = {'qip.exe': sha(self.work / 'qip.exe'), 'Plugins/docking.dll': sha(self.work / 'docking.dll'),
                  'QipUpdateAgent.exe': sha(self.driver), 'QipLauncher.exe': sha(self.driver),
-                 'installed-version.json': sha(self.work / 'version-1.1.1.json')}
+                 'installed-version.json': sha(self.work / ('version-' + TARGET + '.json'))}
         now = int(time.time())
-        manifest = {'schema': 1, 'repository': REPO, 'version': '1.1.1', 'tag': 'v1.1.1',
+        manifest = {'schema': 1, 'repository': REPO, 'version': TARGET, 'tag': 'v' + TARGET,
                     'asset': setup.name, 'size': setup.stat().st_size, 'sha256': sha(setup),
                     'minimum_installed_version': '1.0.0', 'issued_at': now, 'expires_at': now + 86400,
                     'files': [{'path': p, 'sha256': h} for p, h in files.items()]}
@@ -241,13 +244,13 @@ end;
             self.check(self.native('--cycle', app)['scheduled'], 'signed release downloaded and worker scheduled')
             time.sleep(2.5)
             self.check(child.poll() is None and self.phases(state) == ['prepared'] and
-                       json.loads((app / 'installed-version.json').read_text())['version'] == '1.1.0',
+                       json.loads((app / 'installed-version.json').read_text())['version'] == BASELINE,
                        'real worker waits while controlled QIP process is running')
             self.check(inventory(app / 'Users') == before, 'history untouched while update waits')
         finally:
             (app / 'stop-fixture').touch(); child.wait(timeout=10)
         wait_until(lambda: self.phases(state) == ['installed'])
-        self.check(json.loads((app / 'installed-version.json').read_text())['version'] == '1.1.1', 'real Inno upgrade 1.1.0 to 1.1.1')
+        self.check(json.loads((app / 'installed-version.json').read_text())['version'] == TARGET, f'real Inno upgrade {BASELINE} to {TARGET}')
         self.check(inventory(app / 'Users') == before, 'every synthetic profile and history byte preserved')
         snapshots = list((state / 'backups').glob('*/snapshot.json'))
         self.check(len(snapshots) == 1 and inventory(snapshots[0].parent / 'application/Users') == before, 'complete pre-install snapshot preserved')
@@ -299,7 +302,7 @@ end;
             wait_until(lambda: self.phases(state) == ['rolled-back'])
         finally:
             self.environment.pop('QIP_E2E_FAIL_FINALIZE', None)
-        self.check(inventory(app / 'Users') == before and json.loads((app / 'installed-version.json').read_text())['version'] == '1.1.0',
+        self.check(inventory(app / 'Users') == before and json.loads((app / 'installed-version.json').read_text())['version'] == BASELINE,
                    'post-install helper error returns failure to legacy worker and restores damaged history')
 
         app, state = self.fixture('failed-install')
@@ -311,7 +314,7 @@ end;
                    'failed real Inno installer rolls back application and deliberately damaged history')
         with winreg.OpenKey(winreg.HKEY_CURRENT_USER, self.registration) as key:
             version = winreg.QueryValueEx(key, 'DisplayVersion')[0]
-        self.check(version == '1.1.0', 'failed installation restores previous Windows registration')
+        self.check(version == BASELINE, 'failed installation restores previous Windows registration')
 
         app, state = self.fixture('recovery')
         before = inventory(app / 'Users')
@@ -320,7 +323,7 @@ end;
         self.native('--prime-crash', app, state / 'test-manifest.json', state / 'test-manifest.sig')
         self.check(self.native('--recover', app)['recover_started'], 'pending installation journal starts actual recovery worker')
         wait_until(lambda: self.phases(state) == ['rolled-back'])
-        self.check(inventory(app / 'Users') == before and json.loads((app / 'installed-version.json').read_text())['version'] == '1.1.0',
+        self.check(inventory(app / 'Users') == before and json.loads((app / 'installed-version.json').read_text())['version'] == BASELINE,
                    'interrupted-update recovery restores previous version and history')
 
         for name, options, error in [('bad-signature', {'invalid_signature': True}, 'signature_invalid'),
@@ -373,6 +376,7 @@ if __name__ == '__main__':
             audit.close()
             args.report.parent.mkdir(parents=True, exist_ok=True)
             args.report.write_text(json.dumps({'checks': audit.results, 'test_key_only': True,
+                'baseline_version': BASELINE, 'target_version': TARGET,
                 'test_build_overrides': ['ephemeral RSA public key', 'isolated AppId and shortcut names', 'test entry point and transport'],
                 'real_qip_binary_used': False,
                 'source_sha256': {name: sha(ROOT / name) for name in ['updater/src/main.cpp', 'updater/src/transaction.hpp', 'installer/profile-finalization.iss', 'tests/e2e_driver.cpp']},

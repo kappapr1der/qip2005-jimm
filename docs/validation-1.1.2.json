@@ -1,0 +1,229 @@
+{
+  "version": "1.1.2",
+  "date": "2026-11-13",
+  "local_checks_passed": 124,
+  "native_updater": {
+    "tests": 43,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "real_data_test_executed": true
+  },
+  "client_feature_tests_passed": 26,
+  "publication_instruction_tests_passed": 11,
+  "signed_e2e": {
+    "checks": [
+      {
+        "check": "signed release downloaded and worker scheduled",
+        "passed": true
+      },
+      {
+        "check": "real worker waits while controlled QIP process is running",
+        "passed": true
+      },
+      {
+        "check": "history untouched while update waits",
+        "passed": true
+      },
+      {
+        "check": "real Inno upgrade 1.1.1 to 1.1.2",
+        "passed": true
+      },
+      {
+        "check": "every synthetic profile and history byte preserved",
+        "passed": true
+      },
+      {
+        "check": "complete pre-install snapshot preserved",
+        "passed": true
+      },
+      {
+        "check": "worker and installer profile finalization have no mutex conflict",
+        "passed": true
+      },
+      {
+        "check": "equal release version produces no update",
+        "passed": true
+      },
+      {
+        "check": "older release version produces no downgrade",
+        "passed": true
+      },
+      {
+        "check": "repeat launch after update starts only one client",
+        "passed": true
+      },
+      {
+        "check": "worker finalizes relative HistPath and Startup under its own install lock",
+        "passed": true
+      },
+      {
+        "check": "profile finalization preserves history bytes",
+        "passed": true
+      },
+      {
+        "check": "pre-migration profile remains recoverable in the complete snapshot",
+        "passed": true
+      },
+      {
+        "check": "published v1.1.1 worker logic accepts validated new-helper handoff without losing history",
+        "passed": true
+      },
+      {
+        "check": "legacy worker handoff has no install mutex conflict",
+        "passed": true
+      },
+      {
+        "check": "post-install helper error returns failure to legacy worker and restores damaged history",
+        "passed": true
+      },
+      {
+        "check": "failed real Inno installer rolls back application and deliberately damaged history",
+        "passed": true
+      },
+      {
+        "check": "failed installation restores previous Windows registration",
+        "passed": true
+      },
+      {
+        "check": "pending installation journal starts actual recovery worker",
+        "passed": true
+      },
+      {
+        "check": "interrupted-update recovery restores previous version and history",
+        "passed": true
+      },
+      {
+        "check": "signature_invalid rejected before install",
+        "passed": true
+      },
+      {
+        "check": "bad-signature never schedules installer or changes profiles",
+        "passed": true
+      },
+      {
+        "check": "installer_corrupt rejected before install",
+        "passed": true
+      },
+      {
+        "check": "bad-hash never schedules installer or changes profiles",
+        "passed": true
+      },
+      {
+        "check": "github_unavailable rejected before install",
+        "passed": true
+      },
+      {
+        "check": "unavailable API preserves existing application",
+        "passed": true
+      },
+      {
+        "check": "worker_handoff_required rejected before install",
+        "passed": true
+      },
+      {
+        "check": "held mutex without authenticated active worker cannot authorize profile writes",
+        "passed": true
+      }
+    ],
+    "test_key_only": true,
+    "baseline_version": "1.1.1",
+    "target_version": "1.1.2",
+    "test_build_overrides": [
+      "ephemeral RSA public key",
+      "isolated AppId and shortcut names",
+      "test entry point and transport"
+    ],
+    "real_qip_binary_used": false,
+    "source_sha256": {
+      "updater/src/main.cpp": "b8624d46692813f0c4bdfdb1a5903180dac98a5465ef1b9797358134ceef217a",
+      "updater/src/transaction.hpp": "6cecdd7f51c27796ac50edb9b255f0b66f54c175f6f65eb07580d61515f5e12b",
+      "installer/profile-finalization.iss": "4bc80e179d4abe4d0c427fd8ebcef68cf60cc685e4a0667df243636dc6dacde8",
+      "tests/e2e_driver.cpp": "3ba626c2269bea81ae64db63a256e2ddfbedacbf0e60b98404939b4cda6a7caf"
+    },
+    "transport": "loopback HTTP test adapter; production TLS checked separately",
+    "real_inno_and_production_worker_logic": true
+  },
+  "full_installer_checks": [
+    {
+      "check": "1.1.1 installation exit 0",
+      "passed": true
+    },
+    {
+      "check": "1.1.2 installation exit 0",
+      "passed": true
+    },
+    {
+      "check": "Upgrade preserves every user byte except the two intended migration settings",
+      "passed": true
+    },
+    {
+      "check": "Original qip.exe unchanged",
+      "passed": true
+    },
+    {
+      "check": "Original docking.dll unchanged",
+      "passed": true
+    },
+    {
+      "check": "Existing installer identity upgraded in place",
+      "passed": true
+    },
+    {
+      "check": "Shortcut uses Launcher and original working directory",
+      "passed": true
+    },
+    {
+      "check": "Updater settings shortcut exists",
+      "passed": true
+    },
+    {
+      "check": "Auto-check and profile backups enabled; automatic installation disabled by default",
+      "passed": true
+    },
+    {
+      "check": "Manual update created a complete backup before replacing files",
+      "passed": true
+    },
+    {
+      "check": "Backup contains exact private profile bytes",
+      "passed": true
+    },
+    {
+      "check": "Upgrade uses per-user installation mode",
+      "passed": true
+    },
+    {
+      "check": "Current uninstaller exit 0",
+      "passed": true
+    },
+    {
+      "check": "Default uninstall preserves migrated private profiles",
+      "passed": true
+    },
+    {
+      "check": "Isolated installer registration removed",
+      "passed": true
+    },
+    {
+      "check": "Isolated Start-menu shortcuts removed",
+      "passed": true
+    }
+  ],
+  "installer_sha256": "339d67947792434b44101781f4491c34cdf7089f7f499e587d391860cd86fc08",
+  "installer_size": 3902581,
+  "signed_program_files": 155,
+  "source_sha256": {
+    "updater/src/main.cpp": "b8624d46692813f0c4bdfdb1a5903180dac98a5465ef1b9797358134ceef217a",
+    "updater/src/native.hpp": "62cdcb278deef8e008596c81135996d0d26e927a4b02a39e287eb4cd65480f23",
+    "updater/src/transaction.hpp": "6cecdd7f51c27796ac50edb9b255f0b66f54c175f6f65eb07580d61515f5e12b",
+    "installer/QIP2005.iss": "04150a03b15d190b06ff1a40ee0cf7f698321bc7498a1d213a16c9a888f8ecdd",
+    "installer/profile-finalization.iss": "4bc80e179d4abe4d0c427fd8ebcef68cf60cc685e4a0667df243636dc6dacde8"
+  },
+  "original_client_and_plugin_unchanged": true,
+  "private_key_uploaded": false,
+  "real_account_login_retested": false,
+  "off_machine_signing_key_recovery_tested": false,
+  "independent_qip_rightsholder_permission_verified": false,
+  "publication_instruction": "docs/permissions/publication-1.1.2.json"
+}
