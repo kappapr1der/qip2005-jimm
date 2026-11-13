@@ -3,7 +3,8 @@ param(
     [string]$Python = 'python',
     [string]$PayloadDirectory = '',
     [string]$OutputDirectory = '',
-    [string]$SigningKeyDpapi = ''
+    [string]$SigningKeyDpapi = '',
+    [switch]$CompileOnly
 )
 $ErrorActionPreference = 'Stop'
 $taskProject = Split-Path -Parent $PSScriptRoot
@@ -21,6 +22,10 @@ $taskSignature = Get-AuthenticodeSignature -LiteralPath $taskCompiler
 if ($taskSignature.Status -ne 'Valid' -or $taskSignature.SignerCertificate.Subject -notmatch 'Pyrsys B\.V\.') { throw 'Official Inno Setup compiler signature was not verified.' }
 & $taskCompiler ('/DPayloadDir='+$PayloadDirectory) ('/DOutputPath='+$OutputDirectory) (Join-Path $taskProject 'installer\QIP2005.iss')
 if ($LASTEXITCODE -ne 0) { throw 'Installer compilation failed.' }
+if ($CompileOnly) {
+    Write-Output 'Unsigned CI build compiled for verification only; it must not be published as an update.'
+    return
+}
 $taskSignArgs = @((Join-Path $PSScriptRoot 'sign_release.py'),'--directory',$OutputDirectory,'--payload',$PayloadDirectory)
 if ($SigningKeyDpapi) { $taskSignArgs += @('--key-dpapi',$SigningKeyDpapi) }
 & $Python @taskSignArgs

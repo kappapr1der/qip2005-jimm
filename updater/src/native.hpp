@@ -22,7 +22,16 @@ struct Internet {
 inline uint64_t now() { return (uint64_t)std::chrono::duration_cast<std::chrono::seconds>(std::chrono::system_clock::now().time_since_epoch()).count(); }
 inline fs::path modulePath() { wchar_t b[32768]; DWORD n=GetModuleFileNameW(nullptr,b,32768); require(n>0 && n<32768,"module_path"); return fs::path(std::wstring(b,n)); }
 inline fs::path shellFolder(int id) { wchar_t b[MAX_PATH]; require(SHGetFolderPathW(nullptr,id,nullptr,SHGFP_TYPE_CURRENT,b)==S_OK,"shell_folder"); return fs::path(b); }
-inline fs::path dataRoot() { return shellFolder(CSIDL_LOCAL_APPDATA)/L"QIP2005"/L"UpdateAgent"; }
+#ifdef QIP_AGENT_TESTING
+inline fs::path testDataRoot;
+#endif
+inline fs::path dataRoot() {
+#ifdef QIP_AGENT_TESTING
+    require(!testDataRoot.empty(),"test_data_root");return testDataRoot;
+#else
+    return shellFolder(CSIDL_LOCAL_APPDATA)/L"QIP2005"/L"UpdateAgent";
+#endif
+}
 inline bool samePath(const fs::path& a,const fs::path& b) { auto x=fs::absolute(a).lexically_normal().wstring(),y=fs::absolute(b).lexically_normal().wstring(); return CompareStringOrdinal(x.c_str(),(int)x.size(),y.c_str(),(int)y.size(),TRUE)==CSTR_EQUAL; }
 inline bool within(const fs::path& child,const fs::path& parent) {
     auto a=fs::absolute(child).lexically_normal().wstring(),b=fs::absolute(parent).lexically_normal().wstring();
@@ -63,11 +72,26 @@ inline DWORD process(const fs::path& executable,const std::wstring& arguments,bo
 class Mutex {
     Handle handle; bool held=false;
 public:
-    Mutex(const std::wstring& name,bool take):handle(CreateMutexW(nullptr,FALSE,name.c_str())) { require(handle.h!=nullptr,"mutex"); if(take){DWORD s=WaitForSingleObject(handle.h,0);held=s==WAIT_OBJECT_0||s==WAIT_ABANDONED;} }
+    Mutex(const std::wstring& name,bool take,DWORD timeout=0):handle(CreateMutexW(nullptr,FALSE,name.c_str())) { require(handle.h!=nullptr,"mutex"); if(take){DWORD s=WaitForSingleObject(handle.h,timeout);held=s==WAIT_OBJECT_0||s==WAIT_ABANDONED;} }
     ~Mutex(){if(held)ReleaseMutex(handle.h);}
     bool acquired() const{return held;}
 };
 inline std::wstring lockName(const char* purpose,const fs::path& app) { auto s=app.wstring(); CharLowerBuffW(s.data(),(DWORD)s.size()); return L"Local\\QIP2005."+wide(purpose)+L"."+wide(hex(digest(utf8(s))).substr(0,32)); }
+inline std::vector<DWORD> clientProcesses(const fs::path& app) {
+    std::vector<DWORD> result;
+    Handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0));require(snapshot.h!=INVALID_HANDLE_VALUE,"process_snapshot");
+    PROCESSENTRY32W entry{};entry.dwSize=sizeof(entry);require(Process32FirstW(snapshot.h,&entry),"process_snapshot");
+    do {
+        if(_wcsicmp(entry.szExeFile,L"qip.exe"))continue;
+        Handle process(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,FALSE,entry.th32ProcessID));
+        if(!process.h){if(GetLastError()==ERROR_INVALID_PARAMETER)continue;throw std::runtime_error("client_query");}
+        wchar_t path[32768];DWORD length=32768;
+        if(!QueryFullProcessImageNameW(process.h,0,path,&length)){if(GetLastError()==ERROR_INVALID_HANDLE)continue;throw std::runtime_error("client_query");}
+        if(samePath(fs::path(std::wstring(path,length)),app/L"qip.exe"))result.push_back(entry.th32ProcessID);
+    }while(Process32NextW(snapshot.h,&entry));
+    return result;
+}
+inline bool clientRunning(const fs::path& app){return !clientProcesses(app).empty();}
 inline bool appBusy(const fs::path& app,DWORD except=0) {
     Handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0)); require(snapshot.h!=INVALID_HANDLE_VALUE,"process_snapshot");
     PROCESSENTRY32W entry{}; entry.dwSize=sizeof(entry); require(Process32FirstW(snapshot.h,&entry),"process_snapshot");
@@ -110,11 +134,11 @@ class Http final:public Transport {
         } throw std::runtime_error("redirect_limit");
     }
 public:
-    Http():session(WinHttpOpen(L"QIPUpdateAgent/1.1.0",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0)) { require(session.h,"http_init");require(WinHttpSetTimeouts(session.h,10000,10000,15000,15000),"http_timeout"); }
+    Http():session(WinHttpOpen(L"QIPUpdateAgent/1.1.1",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0)) { require(session.h,"http_init");require(WinHttpSetTimeouts(session.h,10000,10000,15000,15000),"http_timeout"); }
     Response get(const std::string& url,size_t limit) override{return fetch(url,limit,nullptr);}
     void download(const std::string& url,const fs::path& file,uint64_t limit) override{require(fetch(url,(size_t)limit,&file).status==200,"download_status");}
 };
-inline json settings() { return readJson(dataRoot()/L"settings.json",{{"check_automatically",true},{"install_after_exit",false},{"external_history_directory",""}}); }
+inline json settings() { return readJson(dataRoot()/L"settings.json",{{"check_automatically",true},{"install_after_exit",false},{"backup_after_exit",true},{"external_history_directory",""}}); }
 inline void saveSettings(const json& s) { writeAtomic(dataRoot()/L"settings.json",s.dump(2)); }
 inline fs::path externalHistory() {
     auto text=settings().value("external_history_directory",std::string());if(text.empty())return {};

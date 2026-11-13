@@ -2,7 +2,7 @@
 
 | Компонент | Использование | Условия и уведомления |
 |---|---|---|
-| QIP 2005 и его модификация, docking, скины, звуки, локализация | Только локальный private payload | Разрешение публичного распространения не установлено; исключены из MIT и Git |
+| QIP 2005 и его модификация, docking, скины, звуки, локализация | Установщик и исходный пакет в Release | Распространение подтверждено владельцем в docs/permissions; исключены из MIT и исходного Git-дерева |
 | nlohmann/json 3.12.0 | Vendored C++ header, встроен в наш EXE | MIT, Copyright 2013–2025 Niels Lohmann; оригинальный текст в `updater/vendor/LICENSE.nlohmann-json` |
 | MinGW-w64 runtime | Статическая часть нативного EXE | Оригинальные уведомления в `licenses/MinGW-w64-runtime.txt` |
 | GCC libstdc++/runtime | Статическая часть нативного EXE | GPLv3 и GCC Runtime Library Exception 3.1; оба текста в `licenses` |

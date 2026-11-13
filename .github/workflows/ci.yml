@@ -28,4 +28,22 @@ jobs:
           "QIP_TOOLCHAIN=$PWD/build/toolchain/w64devkit/bin" >> $env:GITHUB_ENV
       - run: ./scripts/build-agent.ps1 -ToolchainBin $env:QIP_TOOLCHAIN
       - run: ./scripts/test.ps1 -ToolchainBin $env:QIP_TOOLCHAIN
-      # No third-party payload is downloaded; no binary artifacts are uploaded on PRs.
+      - name: Check availability of the approved source package
+        id: package
+        shell: pwsh
+        run: |
+          try {
+            $response = Invoke-WebRequest -Method Head -Uri 'https://github.com/kappapr1der/qip2005-jimm/releases/download/v1.1.1/QIP2005_clean.7z'
+            if ($response.StatusCode -eq 200) { 'available=true' >> $env:GITHUB_OUTPUT }
+          } catch {
+            'available=false' >> $env:GITHUB_OUTPUT
+            Write-Output 'Full installer verification waits for the initial approved source-package asset. Native build and tests completed above.'
+          }
+      - name: Build and verify the complete installer
+        if: steps.package.outputs.available == 'true'
+        shell: pwsh
+        run: |
+          ./scripts/prepare-ci-payload.ps1
+          ./scripts/build-installer.ps1 -ISCC "$PWD/private/inno/ISCC.exe" -CompileOnly
+          ./scripts/test-installer.ps1 -ISCC "$PWD/private/inno/ISCC.exe" -BaselineSourceDirectory "$PWD/tests/fixtures/v1.0.0" -WorkDirectory "$PWD/build/installer-verification"
+      # Public payload is pinned and approved. No private profiles, signing secrets or binary artifacts are uploaded.

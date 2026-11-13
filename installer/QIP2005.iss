@@ -1,6 +1,6 @@
 ﻿; QIP 2005 / Jimm.online. Packaging only: original payload remains byte-for-byte.
 ; Inno Setup 6.7.3 or newer. UTF-8 source.
-#define PackageVersion "1.1.0"
+#define PackageVersion "1.1.1"
 #ifndef PayloadDir
   #define PayloadDir "..\private\payload"
 #endif
@@ -92,6 +92,7 @@ var
   RemoveUserData: Boolean;
   UpdateOptions: TInputOptionWizardPage;
   BackupMade: Boolean;
+  SetupTasksExplicit: Boolean;
 
 function OwnShortcut(const Name: String): Boolean;
 var
@@ -114,6 +115,18 @@ end;
 function OwnStartupShortcut: Boolean;
 begin
   Result := OwnShortcut(ExpandConstant('{userstartup}\QIP 2005 (Jimm.online).lnk'));
+end;
+
+function OwnNativeStartup: Boolean;
+var
+  Value: String;
+begin
+  Result := False;
+  if not RegQueryStringValue(HKCU, 'Software\Microsoft\Windows\CurrentVersion\Run', 'QIP2005', Value) then Exit;
+  if (Length(Value) > 1) and (Value[1] = '"') and (Value[Length(Value)] = '"') then
+    Value := Copy(Value, 2, Length(Value) - 2);
+  Result := (CompareText(Value, ExpandConstant('{app}\qip.exe')) = 0) or
+    (CompareText(Value, ExpandConstant('{app}\QipLauncher.exe')) = 0);
 end;
 
 function OwnDesktopShortcut: Boolean;
@@ -160,20 +173,36 @@ var
   Existing: AnsiString;
   Text: String;
   Selected: String;
+  I: Integer;
+  ExplicitTasks: Boolean;
 begin
-  if (not WizardSilent) and OwnStartupShortcut then
+  ExplicitTasks := False;
+  for I := 1 to ParamCount do
+    if (Pos('/TASKS=', Uppercase(ParamStr(I))) = 1) or
+      (Pos('/MERGETASKS=', Uppercase(ParamStr(I))) = 1) then
+      ExplicitTasks := True;
+  SetupTasksExplicit := ExplicitTasks;
+  if (not WizardSilent) and (OwnStartupShortcut or OwnNativeStartup) then
   begin
     Selected := WizardSelectedTasks(False);
     if Selected <> '' then Selected := Selected + ',';
     WizardSelectTasks(Selected + 'autostart');
+  end;
+  if (not WizardSilent) and OwnDesktopShortcut then
+  begin
+    Selected := WizardSelectedTasks(False);
+    if Selected <> '' then Selected := Selected + ',';
+    WizardSelectTasks(Selected + 'desktopicon');
   end;
   UpdateOptions := CreateInputOptionPage(wpSelectTasks, 'Обновления QIP',
     'Проверка подписанных обновлений из GitHub Releases',
     'Проверка сети выполняется отдельно от клиента. Установка возможна только после закрытия QIP.', False, False);
   UpdateOptions.Add('Автоматически проверять и скачивать обновления (раз в 24 часа)');
   UpdateOptions.Add('Устанавливать автоматически после закрытия QIP');
+  UpdateOptions.Add('Создавать копию профиля и истории после выхода (раз в сутки)');
   UpdateOptions.Values[0] := True;
   UpdateOptions.Values[1] := False;
+  UpdateOptions.Values[2] := True;
   if LoadStringFromFile(ExpandConstant('{localappdata}\QIP2005\UpdateAgent\settings.json'), Existing) then
   begin
     Text := String(Existing);
@@ -183,6 +212,7 @@ begin
     StringChangeEx(Text, #9, '', True);
     UpdateOptions.Values[0] := Pos('"check_automatically":false', Text) = 0;
     UpdateOptions.Values[1] := Pos('"install_after_exit":true', Text) <> 0;
+    UpdateOptions.Values[2] := Pos('"backup_after_exit":false', Text) = 0;
   end;
 end;
 
@@ -199,11 +229,16 @@ begin
       Params := '--configure ';
       if UpdateOptions.Values[0] then Params := Params + '1 ' else Params := Params + '0 ';
       if UpdateOptions.Values[1] then Params := Params + '1' else Params := Params + '0';
+      if UpdateOptions.Values[2] then Params := Params + ' 1' else Params := Params + ' 0';
       if not Exec(ExpandConstant('{app}\QipUpdateAgent.exe'), Params,
         ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ExitCode) then
         RaiseException('Не удалось сохранить настройки обновления.');
       if ExitCode <> 0 then RaiseException('Обновлятор не сохранил настройки.');
     end;
+    if not Exec(ExpandConstant('{app}\QipUpdateAgent.exe'), '--prepare-profile',
+      ExpandConstant('{app}'), SW_HIDE, ewWaitUntilTerminated, ExitCode) then
+      RaiseException('Не удалось подготовить профиль QIP.');
+    if ExitCode <> 0 then RaiseException('Профиль QIP не подготовлен. Резервная копия сохранена.');
   end;
 end;
 
@@ -262,6 +297,19 @@ begin
   begin
     Result := 'Каталог установки должен называться QIP2005 и быть обычной папкой.';
     Exit;
+  end;
+  if WizardSilent and (not SetupTasksExplicit) then
+  begin
+    if OwnStartupShortcut or OwnNativeStartup then
+    begin
+      WizardSelectTasks('autostart');
+      Log('Preserved the existing QIP startup task.');
+    end;
+    if OwnDesktopShortcut then
+    begin
+      WizardSelectTasks('desktopicon');
+      Log('Preserved the existing QIP desktop shortcut task.');
+    end;
   end;
   DataDir := ExpandConstant('{app}\Users');
   if IsReparsePoint(DataDir) then

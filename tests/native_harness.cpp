@@ -1,4 +1,4 @@
-#include "../updater/src/transaction.hpp"
+#include "../updater/src/main.cpp"
 #include <iostream>
 using namespace qip;
 class MockHttp:public Transport {
@@ -46,7 +46,25 @@ int wmain(int argc,wchar_t** argv){
     json output=json::object();
     try{
         require(argc==3,"arguments");std::string mode=utf8(argv[1]);auto f=json::parse(read(argv[2],2*1024*1024));
+        testDataRoot=fs::path(argv[2]).parent_path()/L"agent-state";
         if(mode=="semver")output["comparison"]=SemVer::parse(f.at("a").get<std::string>()).compare(SemVer::parse(f.at("b").get<std::string>()));
+        else if(mode=="launch"){
+            auto app=fs::path(wide(f.at("app").get<std::string>()));auto result=startClientOnce(app,f.value("show",true));
+            output={{"started",result.started},{"pid",result.pid},{"window_shown",result.window_shown},{"instances",clientProcesses(app).size()}};
+        }
+        else if(mode=="client-state"){
+            auto app=fs::path(wide(f.at("app").get<std::string>()));auto pids=clientProcesses(app);output["instances"]=pids.size();
+            if(!pids.empty()){ClientWindowSearch search{pids.front()};EnumWindows(findClientWindow,reinterpret_cast<LPARAM>(&search));output["window_visible"]=search.window && IsWindowVisible(search.window);output["window_minimized"]=search.window && IsIconic(search.window);}
+        }
+        else if(mode=="prepare-profile"){auto app=fs::path(wide(f.at("app").get<std::string>()));prepareProfile(app,false);output["prepared"]=true;}
+        else if(mode=="session-monitor"){monitor(wide(f.at("app").get<std::string>()),false);output["finished"]=true;}
+        else if(mode=="profile-backup" || mode=="profile-restore" || mode=="profile-recover" || mode=="profile-list"){
+            auto app=fs::path(wide(f.at("app").get<std::string>()));ProfileBackupStore store(wide(f.at("storage").get<std::string>()));auto extra=wide(f.value("external",std::string()));
+            if(mode=="profile-backup"){auto result=store.create(app,f.value("manual",false),f.value("enabled",true),f.value("timestamp",now()),extra);output={{"status",result.status},{"id",result.id}};}
+            if(mode=="profile-restore"){store.restore(app,f.at("id"),extra);output["restored"]=true;}
+            if(mode=="profile-recover")output["recovered"]=store.recover(app,extra);
+            output["count"]=store.list(app).size();
+        }
         else if(mode=="busy")output["busy"]=appBusy(wide(f.at("app").get<std::string>()));
         else if(mode=="spawn"){
             auto app=fs::path(wide(f.at("app").get<std::string>()));auto exe=fs::path(wide(f.at("exe").get<std::string>()));

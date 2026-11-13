@@ -5,7 +5,7 @@ on:
       tag:
         description: 'Stable version tag (must equal VERSION)'
         required: true
-        default: v1.1.0
+        default: v1.1.1
       approval:
         description: 'Type PUBLISH_STABLE after reviewing this commit'
         required: true
@@ -63,7 +63,7 @@ jobs:
       - run: ./scripts/build-agent.ps1 -ToolchainBin "$PWD/build/toolchain/w64devkit/bin"
       - name: Obtain verified private source package and official compiler
         env:
-          QIP_SOURCE_PACKAGE_URL: ${{ secrets.QIP_SOURCE_PACKAGE_URL }}
+          QIP_SOURCE_PACKAGE_URL: ${{ vars.QIP_SOURCE_PACKAGE_URL || 'https://github.com/kappapr1der/qip2005-jimm/releases/download/v1.1.1/QIP2005_clean.7z' }}
         run: |
           if (-not $env:QIP_SOURCE_PACKAGE_URL.StartsWith('https://')) { throw 'Private source package URL must be HTTPS.' }
           New-Item -ItemType Directory private -Force | Out-Null

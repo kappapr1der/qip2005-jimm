@@ -1,0 +1,71 @@
+{
+  "version": "1.1.1",
+  "date_moscow": "2026-11-13",
+  "updater_tests": {
+    "tests": 42,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "real_data_test_executed": true
+  },
+  "client_feature_tests": {
+    "tests": 25,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "uses_only_controlled_client_fixture": true
+  },
+  "installer_integrations": [
+    {
+      "baseline": "1.0.0",
+      "checks": 16,
+      "passed": 16
+    },
+    {
+      "baseline": "1.1.0",
+      "checks": 16,
+      "passed": 16
+    },
+    {
+      "baseline": "existing startup",
+      "checks": 18,
+      "passed": 18
+    }
+  ],
+  "clean_original_client_smoke": {
+    "launcher_ms": [
+      1204,
+      105
+    ],
+    "original_client_started": true,
+    "duplicate_prevented": true,
+    "original_window_shown": true,
+    "after_exit_backups": 1,
+    "authentication_performed": false,
+    "messages_sent": false
+  },
+  "settings_gui": {
+    "settings_layout_checked": true,
+    "manual_backup_button_verified": true,
+    "backup_list_verified": true,
+    "restore_confirmation_observed": true,
+    "pre_restore_copy_verified": true,
+    "synthetic_history_unchanged": true,
+    "real_user_data_used": false
+  },
+  "working_installation": {
+    "working_installation_upgraded": true,
+    "version": "1.1.1",
+    "user_files_preserved_except_documented_migration": true,
+    "user_file_count": 48,
+    "original_client_unchanged": true,
+    "original_plugin_unchanged": true,
+    "private_full_backup_created": true
+  },
+  "installer_sha256": "66190b1f79841d295eb9e423b6e3a3b5a93856fdf378603de5ffb36b235f9d11",
+  "installer_bytes": 3900738,
+  "public_redistribution_approved": true,
+  "real_messages_sent_by_agent": false,
+  "windows_reboot_test_executed": false,
+  "remote_ci_result": "recorded after source publication in local delivery report"
+}

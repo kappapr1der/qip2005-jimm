@@ -84,8 +84,41 @@ inline ApplyResult apply(Installer& installer,Integration& integration,const fs:
 }
 inline constexpr const wchar_t* UninstallKey=L"Software\\Microsoft\\Windows\\CurrentVersion\\Uninstall\\{A94D4B7F-5D7B-4E78-BF72-C44A3AC98849}_is1";
 class WindowsIntegration final:public Integration {
+    fs::path application;
+    bool ownStartup(const Bytes& data,DWORD type)const{
+        if((type!=REG_SZ && type!=REG_EXPAND_SZ) || data.empty() || data.size()%sizeof(wchar_t))return false;
+        std::wstring value(reinterpret_cast<const wchar_t*>(data.data()),data.size()/sizeof(wchar_t));
+        while(!value.empty() && !value.back())value.pop_back();
+        if(value.size()>1 && value.front()==L'"' && value.back()==L'"')value=value.substr(1,value.size()-2);
+        return !value.empty() && (samePath(value,application/L"qip.exe") || samePath(value,application/L"QipLauncher.exe"));
+    }
+    json startupState(){
+        HKEY key;LONG status=RegOpenKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,KEY_QUERY_VALUE,&key);
+        if(status==ERROR_FILE_NOT_FOUND)return {{"managed",true},{"present",false}};
+        require(status==ERROR_SUCCESS,"registry_read");DWORD size=0,type=0;status=RegQueryValueExW(key,L"QIP2005",nullptr,&type,nullptr,&size);
+        if(status==ERROR_FILE_NOT_FOUND){RegCloseKey(key);return {{"managed",true},{"present",false}};}
+        if(status!=ERROR_SUCCESS || size>65536){RegCloseKey(key);throw std::runtime_error("registry_read");}
+        Bytes data(size);status=RegQueryValueExW(key,L"QIP2005",nullptr,&type,data.data(),&size);RegCloseKey(key);require(status==ERROR_SUCCESS,"registry_read");
+        if(!ownStartup(data,type))return {{"managed",false}};
+        return {{"managed",true},{"present",true},{"type",type},{"data",hex(data)}};
+    }
+    void restoreStartup(const json& state){
+        if(!state.value("managed",false))return;
+        HKEY key;DWORD disposition=0;require(RegCreateKeyExW(HKEY_CURRENT_USER,L"Software\\Microsoft\\Windows\\CurrentVersion\\Run",0,nullptr,0,KEY_QUERY_VALUE|KEY_SET_VALUE,nullptr,&key,&disposition)==ERROR_SUCCESS,"registry_restore");
+        LONG status=ERROR_SUCCESS;
+        if(state.value("present",false)){
+            auto data=unhex(state.at("data"));DWORD type=state.at("type");require(ownStartup(data,type),"registry_backup");
+            status=RegSetValueExW(key,L"QIP2005",0,type,data.data(),(DWORD)data.size());
+        }else{
+            DWORD type=0,size=65536;Bytes data(size);status=RegQueryValueExW(key,L"QIP2005",nullptr,&type,data.data(),&size);data.resize(std::min<DWORD>(size,65536));
+            if(status==ERROR_SUCCESS && ownStartup(data,type))status=RegDeleteValueW(key,L"QIP2005");
+            else if(status==ERROR_SUCCESS || status==ERROR_FILE_NOT_FOUND)status=ERROR_SUCCESS;
+        }
+        RegCloseKey(key);require(status==ERROR_SUCCESS || status==ERROR_FILE_NOT_FOUND,"registry_restore");
+    }
     std::vector<fs::path> links() { return {shellFolder(CSIDL_DESKTOPDIRECTORY)/L"QIP 2005 (Jimm.online).lnk",shellFolder(CSIDL_STARTUP)/L"QIP 2005 (Jimm.online).lnk",shellFolder(CSIDL_PROGRAMS)/L"QIP 2005 (Jimm.online)"/L"QIP 2005 (Jimm.online).lnk",shellFolder(CSIDL_PROGRAMS)/L"QIP 2005 (Jimm.online)"/L"Удалить QIP 2005.lnk",shellFolder(CSIDL_PROGRAMS)/L"QIP 2005 (Jimm.online)"/L"Настройки обновлений.lnk"}; }
 public:
+    explicit WindowsIntegration(fs::path app=modulePath().parent_path()):application(std::move(app)){}
     json capture(const fs::path& backup) override {
         json state={{"registry",json::array()},{"registry_present",false},{"links",json::array()}};HKEY key;
         LONG result=RegOpenKeyExW(HKEY_CURRENT_USER,UninstallKey,0,KEY_READ,&key);
@@ -100,7 +133,7 @@ public:
         }
         int i=0;fs::create_directories(backup/L"integration");
         for(auto& link:links()){noLinks(link);bool exists=fs::is_regular_file(link);std::string file=std::to_string(i++)+".lnk";state["links"].push_back({{"present",exists},{"file",file}});if(exists)fs::copy_file(link,backup/L"integration"/wide(file));}
-        return state;
+        state["native_startup"]=startupState();return state;
     }
     void restore(const fs::path& backup,const json& state) override {
         LONG result=RegDeleteTreeW(HKEY_CURRENT_USER,UninstallKey);require(result==ERROR_SUCCESS || result==ERROR_FILE_NOT_FOUND,"registry_restore");
@@ -109,6 +142,7 @@ public:
         }
         auto paths=links();require(state.at("links").size()==paths.size(),"integration_backup");
         for(size_t i=0;i<paths.size();++i){auto& link=paths[i];noLinks(link);auto v=state.at("links").at(i);if(v.at("present").get<bool>()){fs::create_directories(link.parent_path());fs::copy_file(backup/L"integration"/wide(v.at("file").get<std::string>()),link,fs::copy_options::overwrite_existing);}else if(fs::is_regular_file(link))fs::remove(link);}
+        if(state.contains("native_startup"))restoreStartup(state.at("native_startup"));
     }
 };
 class WindowsInstaller final:public Installer {

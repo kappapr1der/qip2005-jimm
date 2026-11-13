@@ -1,5 +1,5 @@
 {
-  "qip_redistribution_approved": false,
-  "evidence": null,
-  "reason": "The supplied archive has no redistribution license or patch-author permission. Historical QIP EULA URL is unavailable. Public client binaries, resources and full installers are blocked."
+  "qip_redistribution_approved": true,
+  "evidence": "docs/permissions/owner-confirmation-2026-11-13.md",
+  "reason": "The project owner confirmed redistribution rights in the working conversation on 2026-11-13 and explicitly requested publication of the release. This records the owner's confirmation; it does not relicense QIP under the MIT license for the maintenance code."
 }

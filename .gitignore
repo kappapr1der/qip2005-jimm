@@ -1,7 +1,8 @@
-# Third-party client and all personal data stay local.
+# Build inputs, generated artifacts and personal data are not committed.
 /private/
 /build/
 /dist/
+/dist-*/
 /work/
 **/Users/
 **/History/
