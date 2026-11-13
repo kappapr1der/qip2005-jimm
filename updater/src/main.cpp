@@ -43,6 +43,42 @@ static bool checkCycle(const fs::path& app,bool manual,Transport* transport=null
     log("update_authenticated");
     stageWorker(app,*offer,setup,automatic);log("update_scheduled");return true;
 }
+static void finalizeInstalledProfile(const fs::path& app){
+    prepareProfile(app);
+    auto config=settings();if(!config.contains("backup_after_exit")){config["backup_after_exit"]=true;saveSettings(config);}
+}
+static bool activeWorkerHandoff(const fs::path& app){
+    auto transactions=dataRoot()/L"transactions";noLinks(transactions);if(!fs::is_directory(transactions))return false;
+    size_t matches=0;
+    for(auto& entry:fs::directory_iterator(transactions)){
+        noLinks(entry.path());if(!entry.is_directory() || !fs::exists(entry.path()/L"phase"))continue;
+        if(read(entry.path()/L"phase",64)!="installing")continue;
+        auto job=readJson(entry.path()/L"job.json");if(!samePath(wide(job.at("app").get<std::string>()),app))continue;
+        auto manifest=authenticate(policy(),read(entry.path()/L"manifest.json",128*1024),read(entry.path()/L"manifest.sig",2048),now());
+        verifyInstalled(app,manifest);
+        auto expected=entry.path()/L"QipUpdateWorker.exe";noLinks(expected);
+        auto prior=dataRoot()/L"backups"/entry.path().filename()/L"application"/L"QipUpdateAgent.exe";noLinks(prior);
+        require(hashFile(expected)==hashFile(prior),"worker_handoff_binary");
+        Handle snapshot(CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS,0));require(snapshot.h!=INVALID_HANDLE_VALUE,"process_snapshot");
+        PROCESSENTRY32W process{};process.dwSize=sizeof(process);require(Process32FirstW(snapshot.h,&process),"process_snapshot");
+        bool running=false;
+        do{
+            if(_wcsicmp(process.szExeFile,L"QipUpdateWorker.exe"))continue;
+            Handle handle(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,FALSE,process.th32ProcessID));require(handle.h,"worker_handoff_process");
+            wchar_t path[32768];DWORD length=32768;require(QueryFullProcessImageNameW(handle.h,0,path,&length),"worker_handoff_process");
+            if(samePath(fs::path(std::wstring(path,length)),expected))running=true;
+        }while(Process32NextW(snapshot.h,&process));
+        if(running)++matches;
+    }
+    return matches==1;
+}
+static void finalizeFromInstaller(const fs::path& app){
+    Mutex profile(lockName("ProfileFinalize",app),true,10000);require(profile.acquired(),"profile_finalize_busy");
+    Mutex install(lockName("Install",app),true);
+    require(install.acquired() || activeWorkerHandoff(app),"worker_handoff_required");
+    require(!appBusy(app,GetCurrentProcessId()),"application_busy");
+    finalizeInstalledProfile(app);
+}
 static void monitor(const fs::path& app,bool manual,Transport* transport=nullptr){
     Mutex single(lockName(manual?"ManualCheck":"Monitor",app),true);if(!single.acquired())return;
     do {
@@ -73,7 +109,7 @@ static void worker(const std::string& id){
     auto setup=fs::path(wide(job.at("installer").get<std::string>()));auto expected=dataRoot()/L"downloads"/wide(manifest.at("version").get<std::string>())/wide(manifest.at("asset").get<std::string>());require(samePath(setup,expected),"installer_path");noLinks(setup);
     try{ProfileBackupStore().create(app,false,settings().value("backup_after_exit",true),now(),externalHistory());}
     catch(const std::exception& error){log("profile_backup_failed");logFailure(error);}
-    Offer offer{manifest,raw,signature,{}};auto result=apply(installer,integration,app,setup,backup,dir/L"phase",externalHistory(),offer);
+    Offer offer{manifest,raw,signature,{}};auto result=apply(installer,integration,app,setup,backup,dir/L"phase",externalHistory(),offer,[&]{finalizeInstalledProfile(app);});
     if(result==ApplyResult::busy){writeAtomic(dir/L"phase","deferred");log("install_deferred");return;}
     if(result==ApplyResult::installed)log("update_installed");
     else{auto state=readJson(dataRoot()/L"state.json");state["failed_version"]=manifest.at("version");writeAtomic(dataRoot()/L"state.json",state.dump());log("update_rolled_back");notice(L"Обновление не установлено. Предыдущая версия QIP и пользовательские данные восстановлены. Резервная копия сохранена.");}
@@ -162,7 +198,7 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,LPWSTR,int){
         SetDefaultDllDirectories(LOAD_LIBRARY_SEARCH_SYSTEM32);SetProcessDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
         int count=0;auto raw=CommandLineToArgvW(GetCommandLineW(),&count);require(raw,"arguments");std::vector<std::wstring> args(raw,raw+count);LocalFree(raw);
         auto mode=count>1?args[1]:(modulePath().filename()==L"QipLauncher.exe"?L"--launch":L"--settings");
-        quiet=mode==L"--configure" || mode==L"--backup-for-install" || mode==L"--prepare-profile";
+        quiet=mode==L"--configure" || mode==L"--backup-for-install" || mode==L"--prepare-profile" || mode==L"--prepare-profile-from-installer";
         if(mode==L"--worker"){require(count==3,"arguments");worker(utf8(args[2]));return 0;}
         if(mode==L"--backup-for-install" || mode==L"--restore-backup"){
             require(count==4,"arguments");auto app=validatedApp(args[2]);std::string id=utf8(args[3]);require(std::regex_match(id,std::regex(R"(manual-[0-9A-Za-z_-]{1,80})")),"backup_id");
@@ -172,7 +208,8 @@ int WINAPI wWinMain(HINSTANCE instance,HINSTANCE,LPWSTR,int){
         }
         auto app=validatedApp(modulePath().parent_path());
         if(mode==L"--configure"){require((count==4 || count==5) && (args[2]==L"0"||args[2]==L"1") && (args[3]==L"0"||args[3]==L"1"),"arguments");auto s=settings();s["check_automatically"]=args[2]==L"1";s["install_after_exit"]=args[3]==L"1";if(count==5){require(args[4]==L"0"||args[4]==L"1","arguments");s["backup_after_exit"]=args[4]==L"1";}saveSettings(s);return 0;}
-        if(mode==L"--prepare-profile"){require(count==2,"arguments");Mutex lock(lockName("Install",app),true);require(lock.acquired(),"application_busy");prepareProfile(app);auto s=settings();if(!s.contains("backup_after_exit")){s["backup_after_exit"]=true;saveSettings(s);}return 0;}
+        if(mode==L"--prepare-profile"){require(count==2,"arguments");Mutex lock(lockName("Install",app),true);require(lock.acquired(),"application_busy");finalizeInstalledProfile(app);return 0;}
+        if(mode==L"--prepare-profile-from-installer"){require(count==2,"arguments");finalizeFromInstaller(app);return 0;}
         if(mode==L"--backup-profile"){require(count==2,"arguments");ProfileBackupStore().create(app,true,true,now(),externalHistory());return 0;}
         if(mode==L"--launch")launch(app);
         else if(mode==L"--monitor")monitor(app,false);

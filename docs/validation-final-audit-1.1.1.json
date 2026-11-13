@@ -1,0 +1,286 @@
+{
+  "audit_date": "2026-11-13",
+  "audited_public_version": "1.1.1",
+  "new_release_published": false,
+  "working_client_updated": false,
+  "local_automated_checks_passed": 119,
+  "limitations": [
+    "No independent redistribution permission from the QIP rightsholder supplied",
+    "No off-machine or replacement-Windows signing-key recovery tested",
+    "No real account login or new real messages in this audit",
+    "No physical power interruption tested",
+    "Published 1.1.1 retains the observed profile-finalization defect; correction is source-only for the next version"
+  ],
+  "tests": {
+    "native_updater": {
+      "tests": 43,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "real_data_test_executed": true
+    },
+    "client_features": 26,
+    "signed_e2e_checks": 28,
+    "signed_e2e_all_passed": true,
+    "installer_checks": 16,
+    "installer_all_passed": true,
+    "publication_gate_tests": 6
+  },
+  "live_release": {
+    "baseline_version": "1.1.0",
+    "release_version": "1.1.1",
+    "installed_version": "1.1.1",
+    "unmodified_production_agent_and_installer": true,
+    "anonymous_github_api_and_download": true,
+    "production_rsa_signature_verified": true,
+    "installer_sha256": "cdffb402d296ac21f37ebd4f3befb83eefc0f4bca08ad85af228df1aa0289b25",
+    "installer_size": 3900701,
+    "installed_program_hashes_matched": 155,
+    "test_profile_files_preserved_after_client_exit": 3,
+    "history_preserved": true,
+    "real_client_exit": "user closed account-free test QIP normally",
+    "phase": "installed",
+    "postinstall_application_busy_observed": true,
+    "important_limitation": "Published installer can report success despite failed prepare-profile helper. Fixed only in audit source; no new public release.",
+    "real_account_login_or_messaging_tested": false
+  },
+  "version_comparison": {
+    "actual_github_api_and_pinned_rsa": true,
+    "baseline_1_1_0_offered": "1.1.1",
+    "installed_package_version": "1.1.1",
+    "newer_local_1_2_0_not_downgraded": true,
+    "same_release_no_update": true
+  },
+  "key_backup": {
+    "key_bits": 3072,
+    "public_key_sha256": "938089a7bc1be2098d670b354f17097d97bc25f5495ff4f4232746fa1eb2f24f",
+    "backup_decrypted_and_signed": true,
+    "pinned_public_key_matches": true,
+    "corrupt_dpapi_rejected": true,
+    "plaintext_key_written": false,
+    "network_used": false,
+    "local_same_account_backup_only": true,
+    "portable_offline_recovery_tested": false,
+    "acl_restricted_to_owner_system_administrators": true
+  },
+  "github_key_metadata": {
+    "repository": {
+      "metadata_readable": true,
+      "legacy_signing_secret_present": false
+    },
+    "release_environment": {
+      "metadata_readable": false,
+      "legacy_signing_secret_present": null
+    },
+    "private_build_environment": {
+      "metadata_readable": false,
+      "legacy_signing_secret_present": null
+    },
+    "private_key_loaded_or_uploaded": false,
+    "limitation": "Checks current named-secret metadata only; cannot prove absence from historical/deleted secrets or other storage."
+  },
+  "storage": {
+    "read_only": true,
+    "existing_copies_deleted": 0,
+    "application": {
+      "files": 209,
+      "directories": 21,
+      "logical_bytes": 12430314,
+      "allocated_bytes": 12727248,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "current_users": {
+      "files": 48,
+      "directories": 6,
+      "logical_bytes": 302651,
+      "allocated_bytes": 322104,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "profile-backups": {
+      "files": 53,
+      "directories": 12,
+      "logical_bytes": 313196,
+      "allocated_bytes": 334456,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "backups": {
+      "files": 206,
+      "directories": 23,
+      "logical_bytes": 10866095,
+      "allocated_bytes": 11147432,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "downloads": {
+      "files": 0,
+      "directories": 0,
+      "logical_bytes": 0,
+      "allocated_bytes": 0,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "transactions": {
+      "files": 0,
+      "directories": 0,
+      "logical_bytes": 0,
+      "allocated_bytes": 0,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "profile-migration": {
+      "files": 2,
+      "directories": 2,
+      "logical_bytes": 3143,
+      "allocated_bytes": 4200,
+      "skipped_links": 0,
+      "inaccessible": 0
+    },
+    "all_agent_state": {
+      "files": 264,
+      "directories": 38,
+      "logical_bytes": 11182756,
+      "allocated_bytes": 11486424,
+      "skipped_links": 0,
+      "inaccessible": 0
+    }
+  },
+  "working_preservation": {
+    "working_209_files_unchanged": true,
+    "working_registration_and_links_unchanged": true,
+    "working_agent_state_byte_identical": true
+  },
+  "signed_e2e": {
+    "checks": [
+      {
+        "check": "signed release downloaded and worker scheduled",
+        "passed": true
+      },
+      {
+        "check": "real worker waits while controlled QIP process is running",
+        "passed": true
+      },
+      {
+        "check": "history untouched while update waits",
+        "passed": true
+      },
+      {
+        "check": "real Inno upgrade 1.1.0 to 1.1.1",
+        "passed": true
+      },
+      {
+        "check": "every synthetic profile and history byte preserved",
+        "passed": true
+      },
+      {
+        "check": "complete pre-install snapshot preserved",
+        "passed": true
+      },
+      {
+        "check": "worker and installer profile finalization have no mutex conflict",
+        "passed": true
+      },
+      {
+        "check": "equal release version produces no update",
+        "passed": true
+      },
+      {
+        "check": "older release version produces no downgrade",
+        "passed": true
+      },
+      {
+        "check": "repeat launch after update starts only one client",
+        "passed": true
+      },
+      {
+        "check": "worker finalizes relative HistPath and Startup under its own install lock",
+        "passed": true
+      },
+      {
+        "check": "profile finalization preserves history bytes",
+        "passed": true
+      },
+      {
+        "check": "pre-migration profile remains recoverable in the complete snapshot",
+        "passed": true
+      },
+      {
+        "check": "published v1.1.1 worker logic accepts validated new-helper handoff without losing history",
+        "passed": true
+      },
+      {
+        "check": "legacy worker handoff has no install mutex conflict",
+        "passed": true
+      },
+      {
+        "check": "post-install helper error returns failure to legacy worker and restores damaged history",
+        "passed": true
+      },
+      {
+        "check": "failed real Inno installer rolls back application and deliberately damaged history",
+        "passed": true
+      },
+      {
+        "check": "failed installation restores previous Windows registration",
+        "passed": true
+      },
+      {
+        "check": "pending installation journal starts actual recovery worker",
+        "passed": true
+      },
+      {
+        "check": "interrupted-update recovery restores previous version and history",
+        "passed": true
+      },
+      {
+        "check": "signature_invalid rejected before install",
+        "passed": true
+      },
+      {
+        "check": "bad-signature never schedules installer or changes profiles",
+        "passed": true
+      },
+      {
+        "check": "installer_corrupt rejected before install",
+        "passed": true
+      },
+      {
+        "check": "bad-hash never schedules installer or changes profiles",
+        "passed": true
+      },
+      {
+        "check": "github_unavailable rejected before install",
+        "passed": true
+      },
+      {
+        "check": "unavailable API preserves existing application",
+        "passed": true
+      },
+      {
+        "check": "worker_handoff_required rejected before install",
+        "passed": true
+      },
+      {
+        "check": "held mutex without authenticated active worker cannot authorize profile writes",
+        "passed": true
+      }
+    ],
+    "test_key_only": true,
+    "test_build_overrides": [
+      "ephemeral RSA public key",
+      "isolated AppId and shortcut names",
+      "test entry point and transport"
+    ],
+    "real_qip_binary_used": false,
+    "source_sha256": {
+      "updater/src/main.cpp": "b8624d46692813f0c4bdfdb1a5903180dac98a5465ef1b9797358134ceef217a",
+      "updater/src/transaction.hpp": "6cecdd7f51c27796ac50edb9b255f0b66f54c175f6f65eb07580d61515f5e12b",
+      "installer/profile-finalization.iss": "4bc80e179d4abe4d0c427fd8ebcef68cf60cc685e4a0667df243636dc6dacde8",
+      "tests/e2e_driver.cpp": "b43428dcbd6a46ae02cc3ca35228e43baeebfa82fa18c336b404bddddfe3c055"
+    },
+    "transport": "loopback HTTP test adapter; production TLS checked separately",
+    "real_inno_and_production_worker_logic": true
+  }
+}

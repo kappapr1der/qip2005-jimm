@@ -23,6 +23,11 @@ DEALINGS IN THE SOFTWARE.
 
 This license does not cover QIP 2005, qip.exe, docking.dll, their patches,
 skins, sounds, icons or language files. Redistribution rights for those
-files have not been established. It does not cover the Inno Setup compiler
+files are not granted by this license. QIP and its third-party resources
+remain the property of their respective rightsholders. This is unofficial,
+voluntary maintenance; no ownership of QIP is claimed. A project owner's
+statement is not an independent redistribution permission from a QIP
+rightsholder; see docs/redistribution.md for the evidence status.
+This license does not cover the Inno Setup compiler
 or the vendored nlohmann/json header, compiler runtimes or reproduced
 third-party license texts, which have their own licenses.

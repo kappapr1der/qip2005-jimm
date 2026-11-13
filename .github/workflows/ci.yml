@@ -28,10 +28,26 @@ jobs:
           "QIP_TOOLCHAIN=$PWD/build/toolchain/w64devkit/bin" >> $env:GITHUB_ENV
       - run: ./scripts/build-agent.ps1 -ToolchainBin $env:QIP_TOOLCHAIN
       - run: ./scripts/test.ps1 -ToolchainBin $env:QIP_TOOLCHAIN
-      - name: Check availability of the approved source package
+      - name: End-to-end update using signed synthetic artifacts
+        shell: pwsh
+        run: |
+          ./scripts/prepare-inno.ps1
+          python tests/test_e2e_update.py --toolchain $env:QIP_TOOLCHAIN --iscc "$PWD/build/inno/compiler/ISCC.exe" --work "$PWD/build/e2e-update" --report "$PWD/build/e2e-results.json"
+          if ($LASTEXITCODE -ne 0) { throw 'Signed end-to-end update test failed.' }
+          python -m unittest discover -s tests -p test_release_policy.py -v
+          if ($LASTEXITCODE -ne 0) { throw 'Publication gate tests failed.' }
+      - name: Check reviewed permission for the original source package
         id: package
         shell: pwsh
         run: |
+          $rights = Get-Content docs/redistribution.json -Raw | ConvertFrom-Json
+          if (-not $rights.qip_redistribution_approved) {
+            'available=false' >> $env:GITHUB_OUTPUT
+            Write-Output 'Original QIP payload is excluded: independent redistribution permission is not verified. Synthetic signed E2E ran above.'
+            exit 0
+          }
+          python scripts/redistribution_policy.py
+          if ($LASTEXITCODE -ne 0) { throw 'Invalid redistribution review.' }
           try {
             $response = Invoke-WebRequest -Method Head -Uri 'https://github.com/kappapr1der/qip2005-jimm/releases/download/v1.1.1/QIP2005_clean.7z'
             if ($response.StatusCode -eq 200) { 'available=true' >> $env:GITHUB_OUTPUT }
@@ -46,4 +62,4 @@ jobs:
           ./scripts/prepare-ci-payload.ps1
           ./scripts/build-installer.ps1 -ISCC "$PWD/private/inno/ISCC.exe" -CompileOnly
           ./scripts/test-installer.ps1 -ISCC "$PWD/private/inno/ISCC.exe" -BaselineSourceDirectory "$PWD/tests/fixtures/v1.0.0" -WorkDirectory "$PWD/build/installer-verification"
-      # Public payload is pinned and approved. No private profiles, signing secrets or binary artifacts are uploaded.
+      # No user profiles, private signing keys or binary artifacts are uploaded.
