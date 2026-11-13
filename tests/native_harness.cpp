@@ -48,6 +48,10 @@ int wmain(int argc,wchar_t** argv){
         require(argc==3,"arguments");std::string mode=utf8(argv[1]);auto f=json::parse(read(argv[2],2*1024*1024));
         testDataRoot=fs::path(argv[2]).parent_path()/L"agent-state";
         if(mode=="semver")output["comparison"]=SemVer::parse(f.at("a").get<std::string>()).compare(SemVer::parse(f.at("b").get<std::string>()));
+        else if(mode=="file-identity"){
+            auto a=fs::path(wide(f.at("first").get<std::string>())),b=fs::path(wide(f.at("second").get<std::string>()));
+            output={{"same_file",sameFileIdentity(a,b)},{"same_text_path",samePath(a,b)}};
+        }
         else if(mode=="launch"){
             auto app=fs::path(wide(f.at("app").get<std::string>()));auto result=startClientOnce(app,f.value("show",true));
             output={{"started",result.started},{"pid",result.pid},{"window_shown",result.window_shown},{"instances",clientProcesses(app).size()}};

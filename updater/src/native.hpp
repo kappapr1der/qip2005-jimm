@@ -33,6 +33,14 @@ inline fs::path dataRoot() {
 #endif
 }
 inline bool samePath(const fs::path& a,const fs::path& b) { auto x=fs::absolute(a).lexically_normal().wstring(),y=fs::absolute(b).lexically_normal().wstring(); return CompareStringOrdinal(x.c_str(),(int)x.size(),y.c_str(),(int)y.size(),TRUE)==CSTR_EQUAL; }
+inline bool sameFileIdentity(const fs::path& a,const fs::path& b){
+    Handle first(CreateFileW(a.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,nullptr));
+    Handle second(CreateFileW(b.c_str(),FILE_READ_ATTRIBUTES,FILE_SHARE_READ|FILE_SHARE_WRITE|FILE_SHARE_DELETE,nullptr,OPEN_EXISTING,FILE_FLAG_BACKUP_SEMANTICS,nullptr));
+    if(first.h==INVALID_HANDLE_VALUE || second.h==INVALID_HANDLE_VALUE)return false;
+    FILE_ID_INFO x{},y{};
+    if(!GetFileInformationByHandleEx(first.h,FileIdInfo,&x,sizeof(x)) || !GetFileInformationByHandleEx(second.h,FileIdInfo,&y,sizeof(y)))return false;
+    return x.VolumeSerialNumber==y.VolumeSerialNumber && std::equal(std::begin(x.FileId.Identifier),std::end(x.FileId.Identifier),std::begin(y.FileId.Identifier));
+}
 inline bool within(const fs::path& child,const fs::path& parent) {
     auto a=fs::absolute(child).lexically_normal().wstring(),b=fs::absolute(parent).lexically_normal().wstring();
     while(b.size()>3 && (b.back()==L'\\'||b.back()==L'/'))b.pop_back();
@@ -134,7 +142,7 @@ class Http final:public Transport {
         } throw std::runtime_error("redirect_limit");
     }
 public:
-    Http():session(WinHttpOpen(L"QIPUpdateAgent/1.1.2",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0)) { require(session.h,"http_init");require(WinHttpSetTimeouts(session.h,10000,10000,15000,15000),"http_timeout"); }
+    Http():session(WinHttpOpen(L"QIPUpdateAgent/1.1.3",WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY,WINHTTP_NO_PROXY_NAME,WINHTTP_NO_PROXY_BYPASS,0)) { require(session.h,"http_init");require(WinHttpSetTimeouts(session.h,10000,10000,15000,15000),"http_timeout"); }
     Response get(const std::string& url,size_t limit) override{return fetch(url,limit,nullptr);}
     void download(const std::string& url,const fs::path& file,uint64_t limit) override{require(fetch(url,(size_t)limit,&file).status==200,"download_status");}
 };

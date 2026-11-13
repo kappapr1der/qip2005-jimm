@@ -1,0 +1,12 @@
+{
+  "version": "1.1.2",
+  "date": "2026-11-13",
+  "public_release_returned_to_draft": true,
+  "tag_or_uploaded_assets_replaced": false,
+  "real_old_worker_upgrade_result": "rolled-back",
+  "observed_error": "worker_handoff_required",
+  "root_cause": "Different Windows path representations referred to the same worker executable; string path comparison rejected the genuine worker.",
+  "synthetic_history_preserved": true,
+  "working_209_files_and_integration_restored": true,
+  "replacement_candidate": "1.1.3"
+}

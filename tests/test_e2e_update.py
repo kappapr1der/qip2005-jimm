@@ -292,6 +292,16 @@ end;
                    'published v1.1.1 worker logic accepts validated new-helper handoff without losing history')
         self.check(' application_busy\n' not in (state / 'agent.log').read_text(), 'legacy worker handoff has no install mutex conflict')
 
+        app, state = self.fixture('worker-path-alias')
+        for name in ('QipUpdateAgent.exe', 'QipLauncher.exe'):
+            shutil.copy2(self.legacy_driver, app / name)
+        before = inventory(app / 'Users')
+        self.environment['QIP_E2E_STATE'] = '\\\\?\\' + str(state)
+        self.offer(); self.native('--cycle', app, legacy=True)
+        wait_until(lambda: self.phases(state) == ['installed'])
+        self.check(inventory(app / 'Users') == before, 'Windows path alias permits verified old-worker update and preserves history')
+        self.check(' worker_path_alias_accepted\n' in (state / 'agent.log').read_text(), 'handoff identifies the actual worker by Windows file ID rather than path spelling')
+
         app, state = self.fixture('legacy-postinstall-error')
         for name in ('QipUpdateAgent.exe', 'QipLauncher.exe'):
             shutil.copy2(self.legacy_driver, app / name)

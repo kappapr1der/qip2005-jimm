@@ -3,5 +3,5 @@
   "verification_status": "owner_assertion_only",
   "owner_statement": "docs/permissions/owner-confirmation-2026-11-13.md",
   "evidence": null,
-  "reason": "Independent rightsholder permission has not been supplied. The owner explicitly requested publication of 1.1.2 after the audit. That version-scoped publication instruction is recorded separately and does not change this rights-verification status. Automatic publication remains blocked; local publication requires the exact explicit instruction path and digest."
+  "reason": "Independent QIP rightsholder permission has not been supplied. The owner requested a release with the completed changes. Withdrawn 1.1.2 is not reused; the corrected release is 1.1.3. The separately recorded publication instruction does not change rights-verification status. Automatic publication remains blocked; local publication requires the exact explicit version-scoped instruction path and digest."
 }

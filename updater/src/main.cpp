@@ -49,11 +49,12 @@ static void finalizeInstalledProfile(const fs::path& app){
 }
 static bool activeWorkerHandoff(const fs::path& app){
     auto transactions=dataRoot()/L"transactions";noLinks(transactions);if(!fs::is_directory(transactions))return false;
-    size_t matches=0;
+    size_t matches=0,activeJobs=0;
     for(auto& entry:fs::directory_iterator(transactions)){
         noLinks(entry.path());if(!entry.is_directory() || !fs::exists(entry.path()/L"phase"))continue;
         if(read(entry.path()/L"phase",64)!="installing")continue;
         auto job=readJson(entry.path()/L"job.json");if(!samePath(wide(job.at("app").get<std::string>()),app))continue;
+        ++activeJobs;
         auto manifest=authenticate(policy(),read(entry.path()/L"manifest.json",128*1024),read(entry.path()/L"manifest.sig",2048),now());
         verifyInstalled(app,manifest);
         auto expected=entry.path()/L"QipUpdateWorker.exe";noLinks(expected);
@@ -63,13 +64,14 @@ static bool activeWorkerHandoff(const fs::path& app){
         PROCESSENTRY32W process{};process.dwSize=sizeof(process);require(Process32FirstW(snapshot.h,&process),"process_snapshot");
         bool running=false;
         do{
-            if(_wcsicmp(process.szExeFile,L"QipUpdateWorker.exe"))continue;
-            Handle handle(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,FALSE,process.th32ProcessID));require(handle.h,"worker_handoff_process");
-            wchar_t path[32768];DWORD length=32768;require(QueryFullProcessImageNameW(handle.h,0,path,&length),"worker_handoff_process");
-            if(samePath(fs::path(std::wstring(path,length)),expected))running=true;
+            Handle handle(OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION,FALSE,process.th32ProcessID));if(!handle.h)continue;
+            wchar_t path[32768];DWORD length=32768;if(!QueryFullProcessImageNameW(handle.h,0,path,&length))continue;
+            auto actual=fs::path(std::wstring(path,length));
+            if(sameFileIdentity(actual,expected)){running=true;if(!samePath(actual,expected))log("worker_path_alias_accepted");}
         }while(Process32NextW(snapshot.h,&process));
         if(running)++matches;
     }
+    if(matches!=1)log(activeJobs?"handoff_worker_not_found":"handoff_no_active_job");
     return matches==1;
 }
 static void finalizeFromInstaller(const fs::path& app){
